@@ -23,7 +23,7 @@ https://msk.kitazawa.me/play/9quc8vp8ry
 
 ## ソース
 
-[9quc8vp8ry.is](./../src/kitazawa/9quc8vp8ry.is)
+[9quc8vp8ry.is](./../../src/kitazawa/9quc8vp8ry.is)
 
 ----
 

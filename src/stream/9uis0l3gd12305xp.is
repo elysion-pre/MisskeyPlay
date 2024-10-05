@@ -1,0 +1,442 @@
+/// @ 0.18.0
+// 今日のスパチャ
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let PLAY_NAME = "今日のスパチャ"
+let TAG_NAME =  eval {
+  match SERVER_URL {
+    "https://submarin.online" => { "#SUBMARIN_SUPER_CHAT" }
+    "https://msk.kitazawa.me" => { "#KITAZAWA_SUPER_CHAT" }
+    "https://misskey.stream" => { "#STREAM_SUPER_CHAT" }
+    * => ""
+  }
+}
+let PLAY_URL = eval {
+  if exists THIS_URL THIS_URL
+  else {
+    match SERVER_URL {
+      "https://submarin.online" => { `{SERVER_URL}/play/9sd295l9gv` }
+      "https://msk.kitazawa.me" => { `{SERVER_URL}/play/9rtawsjc34` }
+      "https://misskey.stream" => { `{SERVER_URL}/play/9uis0l3gd12305xp` }
+      * => ""
+    }
+  }
+}
+
+let random = eval {
+  var id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「ユーザーID+今日の日付」である乱数生成器を用意
+  Math:gen_rng(`{id}-{PLAY_NAME}-{Date:year()}-{Date:day()}-{Date:month()}`)
+  // シードが「ユーザーID+秒替わり」である乱数生成器を用意
+//  Math:gen_rng(`{id}-{PLAY_NAME}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+:: Arr {
+  // ランダムで配列の値を返す
+  // param: array<arr>
+  // return: <arr[0~(arr.len - 1)]>
+  @randomSelect(array) {
+    array[random(0, (array.len - 1))]
+  }
+  // 指定の配列を削除した配列を返す
+  // param: array<arr>
+  // param: index<num>
+  // return: <arr>
+  @splice(array, index) {
+    array.slice(0, index).concat(array.slice((index + 1), array.len))
+  }
+}
+
+:: Ui {
+  // 指定UIのhidden処理
+  // param: name<str>
+  // param: f<bool>
+  @hidden(name, f) {
+    Ui:get(name).update({
+      hidden: f
+    })
+  }
+  // 指定UIのdisabled処理
+  // param: name<str>
+  // param: f<bool>
+  @disabled(name, f) {
+    Ui:get(name).update({
+      disabled: f
+    })
+  }
+}
+
+// 除外する絵文字のカテゴリ
+// pagesのjsonデータ読み込み
+// https://{SERVER_URL}/@elysion/pages/ignore_emoji_data
+let IGNORE_EMOJI_LIST = eval {
+  var data = null
+  let pages_data = Mk:api("pages/show", {
+    name: "ignore_emoji_data"
+    username: "elysion"
+  })
+  if (Core:type(pages_data) == "error") {
+    data = {
+      category: [
+        null
+      ]
+    }
+  } else {
+    data = Json:parse(pages_data.content[0].text)
+  }
+  data
+}
+
+@EmojiManager() {
+  let this = {
+    obj: {}
+    categories: []
+    // コンストラクタ
+    constructor: @() {
+      // 除外カテゴリ以外の絵文字抽出
+      this.obj = CUSTOM_EMOJIS.filter(@(emoji) {
+        !IGNORE_EMOJI_LIST.category.incl(emoji.category)
+      })
+      // カテゴリー抽出
+      var prev_category = ""
+      for (let i = 0, (this.obj.len - 1)) {
+        if (prev_category != this.obj[i].category) {
+          this.categories.push(this.obj[i].category)
+        }
+        prev_category = this.obj[i].category
+      }
+      this
+    }
+    // 絵文字を返す
+    // param: name<str>
+    // return: <arr>
+    getEmoji: @(name) {
+      this.obj.filter(@(v) {
+        (v.name == name)
+      }).pop()
+    }
+    // ランダムな絵文字を返す
+    // return: <obj>
+    getRandomEmoji: @() {
+      Arr:randomSelect(this.obj)
+    }
+    // カテゴリー内の絵文字を返す
+    // param: category<str>
+    // return: <arr>
+    getCategoryEmojis: @(category) {
+      this.obj.filter(@(emoji) {
+        emoji.category == category
+      })
+    }
+    // 絵文字のエイリアスを返す
+    // param: emoji<obj>
+    // return: <arr>
+    getEmojiAliases: @(emoji) {
+      var aliases = []
+      // 絵文字追加直後はaliasesに何も入っていない場合がある
+      if (emoji["aliases"].len > 0) {
+        // ""の場合
+        if (emoji["aliases"][0] == "") {
+          // emoji.nameを返す
+          aliases.push(emoji["name"])
+        } else {
+          // エイリアスを返す
+          aliases = emoji["aliases"]
+        }
+      } else {
+        // emoji.nameを返す
+        aliases.push(emoji["name"])
+      }
+      aliases
+    }
+    // 絵文字のエイリアスを返す(fRand = trueでランダム)
+    // param: emoji<obj>
+    // param: fRand<bool>
+    // return: <str>
+    getEmojiAliase: @(emoji, fRand) {
+      var aliase = ""
+      var aliases = this.getEmojiAliases(emoji)
+      if (fRand) {
+        // ランダムでエイリアスを返す
+        aliase = Arr:randomSelect(aliases)
+      } else {
+        // エイリアスの先頭を返す
+        aliase = aliases[0]
+      }
+      aliase
+    }
+  }
+  this.constructor()
+}
+
+// ユーザーデータ
+// param: id<str>
+@User(id) {
+  let this = {
+    data: null
+    // コンストラクタ
+    // param: id<str>
+    constructor: @(id) {
+      this.data = Mk:api("users/show", {
+        userId: id
+      })
+      this
+    }
+    // id取得
+    // return: id<str>
+    getId: @() {
+      return this.data.id
+    }
+    // host取得
+    // return: host<str>
+    getHost: @() {
+      return this.data.host
+    }
+    // 名前取得
+    // return: username<str>
+    getUsername: @() {
+      return this.data.username
+    }
+    // 名前取得
+    // return: name<str>
+    getName: @() {
+      // 名前が未入力ならusername(@hoge)を返す
+      if (this.data.name == null) {
+        return this.getUsername()
+      }
+      return this.data.name
+    }
+    // メンション名取得(@username@host)
+    // return: name<str>
+    getMentionName: @() {
+      match this.getHost() {
+        null => { return `@{this.getUsername()}@{this.getHost()}` }
+        * => { return `@{this.getUsername()}` }
+      }
+    }
+    // プロフィールURL取得
+    // return: name<str>
+    getProfileURL: @() {
+      match this.getHost() {
+        null => { return `{SERVER_URL}/@{this.getUsername()}` }
+        * => { return `https://{this.getHost()}/@{this.getUsername()}` }
+      }
+    }
+    // idが自分かどうか
+    // param: id<str>
+    // return: f<bool>
+    isYourself: @(id) {
+      if (this.data.id == id) return true else return false
+    }
+  }
+  this.constructor(id)
+}
+
+@Game() {
+  let emojiMng = EmojiManager()
+
+  // メッセージ整形(num文字目で改行する)
+  // param: num<num>
+  // param: msg<string>
+  // return: <str>
+  @messageShaping(num, msg) {
+    let retMsg = []
+    loop {
+      if (msg.len < num) {
+        retMsg.push(msg)
+        break
+      }
+      retMsg.push(msg.slice(0, num))
+      msg = msg.slice((num - 1), msg.len)
+    }
+    retMsg.join(Str:lf)
+  }
+  // 半角から全角(不完全)
+  // param: text<str>
+  // return: <str>
+  @hankaku_to_zenkaku(text) {
+    let hankaku_zenkaku_map = [
+      ["0", "０"], ["1", "１"], ["2", "２"], ["3", "３"], ["4", "４"], ["5", "５"], ["6", "６"], ["7", "７"], ["8", "８"], ["9", "９"],
+      ["A", "Ａ"], ["B", "Ｂ"], ["C", "Ｃ"], ["D", "Ｄ"], ["E", "Ｅ"], ["F", "Ｆ"], ["G", "Ｇ"], ["H", "Ｈ"], ["I", "Ｉ"], ["J", "Ｊ"], ["K", "Ｋ"], ["L", "Ｌ"], ["M", "Ｍ"], ["N", "Ｎ"], ["O", "Ｏ"], ["P", "Ｐ"], ["Q", "Ｑ"], ["R", "Ｒ"], ["S", "Ｓ"], ["T", "Ｔ"], ["U", "Ｕ"], ["V", "Ｖ"], ["W", "Ｗ"], ["X", "Ｘ"], ["Y", "Ｙ"], ["Z", "Ｚ"],
+      ["a", "ａ"], ["b", "ｂ"], ["c", "ｃ"], ["d", "ｄ"], ["e", "ｅ"], ["f", "ｆ"], ["g", "ｇ"], ["h", "ｈ"], ["i", "ｉ"], ["j", "ｊ"], ["k", "ｋ"], ["l", "ｌ"], ["m", "ｍ"], ["n", "ｎ"], ["o", "ｏ"], ["p", "ｐ"], ["q", "ｑ"], ["r", "ｒ"], ["s", "ｓ"], ["t", "ｔ"], ["u", "ｕ"], ["v", "ｖ"], ["w", "ｗ"], ["x", "ｘ"], ["y", "ｙ"], ["z", "ｚ"],
+      ["-", "－"], [".", "．"], [" ", "　"], ["!", "！"], ["?", "？"],
+      ["ｱ", "ア"], ["ｲ", "イ"], ["ｳ", "ウ"], ["ｴ", "エ"], ["ｵ", "オ"], ["ｶ", "カ"], ["ｷ", "キ"], ["ｸ", "ク"], ["ｹ", "ケ"], ["ｺ", "コ"], ["ｻ", "サ"], ["ｼ", "シ"], ["ｽ", "ス"], ["ｾ", "セ"], ["ｿ", "ソ"], ["ﾀ", "タ"], ["ﾁ", "チ"], ["ﾂ", "ツ"], ["ﾃ", "テ"], ["ﾄ", "ト"], ["ﾅ", "ナ"], ["ﾆ", "ニ"], ["ﾇ", "ヌ"], ["ﾈ", "ネ"], ["ﾉ", "ノ"], ["ﾊ", "ハ"], ["ﾋ", "ヒ"], ["ﾌ", "フ"], ["ﾍ", "ヘ"], ["ﾎ", "ホ"], ["ﾏ", "マ"], ["ﾐ", "ミ"], ["ﾑ", "ム"], ["ﾒ", "メ"], ["ﾓ", "モ"], ["ﾔ", "ヤ"], ["ﾕ", "ユ"], ["ﾖ", "ヨ"], ["ﾗ", "ラ"], ["ﾘ", "リ"], ["ﾙ", "ル"], ["ﾚ", "レ"], ["ﾛ", "ロ"], ["ﾜ", "ワ"], ["ｦ", "ヲ"], ["ﾝ", "ン"], ["ｧ", "ァ"], ["ｨ", "ィ"], ["ｩ", "ゥ"], ["ｪ", "ェ"], ["ｫ", "ォ"], ["ｯ", "ッ"], ["ｬ", "ャ"], ["ｭ", "ュ"], ["ｮ", "ョ"]
+    ]
+    var result = []
+    each (let t, text.to_arr()) {
+      var fFound = false
+      for (let i, hankaku_zenkaku_map.len) {
+        if (t == hankaku_zenkaku_map[i][0]) {
+          result.push(hankaku_zenkaku_map[i][1])
+          fFound = true
+          break
+        }
+      }
+      if !fFound result.push(t)
+    }
+    return result.join()
+  }
+  // 処理開始
+  @main() {
+    let icon = emojiMng.getRandomEmoji()
+    let money = random(100, 50000)
+    var color = {}
+    match true {
+      (money >= 100 && money < 200) => {
+        color = {
+          primary: "1e88e5",
+          secondary: "1565c0",
+          header: "ffffff",
+          message: "ffffff"
+        }
+      }
+      (money >= 200 && money < 500) => {
+        color = {
+          primary: "00e5ff",
+          secondary: "00b8d4",
+          header: "000000",
+          message: "000000"
+        }
+      }
+      (money >= 500 && money < 1000) => {
+        color = {
+          primary: "1de9b6",
+          secondary: "00bfa5",
+          header: "000000",
+          message: "000000"
+        }
+      }
+      (money >= 1000 && money < 2000) => {
+        color = {
+          primary: "ffca28",
+          secondary: "ffb300",
+          header: "000000",
+          message: "000000"
+        }
+      }
+      (money >= 2000 && money < 5000) => {
+        color = {
+          primary: "f57c00",
+          secondary: "e65100",
+          header: "ffffff",
+          message: "ffffff"
+        }
+      }
+      (money >= 5000 && money < 10000) => {
+        color = {
+          primary: "e91e63",
+          secondary: "c2185b",
+          header: "ffffff",
+          message: "ffffff"
+        }
+      }
+      (money >= 10000 && money < 20000) => {
+        color = {
+          primary: "e62117",
+          secondary: "d00000",
+          header: "ffffff",
+          message: "ffffff"
+        }
+      }
+      (money >= 20000 && money < 50000) => {
+        color = {
+          primary: "e62117",
+          secondary: "d00000",
+          header: "ffffff",
+          message: "ffffff"
+        }
+      }
+      * => {
+        color = {
+          primary: "1e88e5",
+          secondary: "1565c0",
+          header: "ffffff",
+          message: "ffffff"
+        }
+      }
+    }
+    let player = User(USER_ID)
+
+    let messages = []
+    for 9 {
+      messages.push(emojiMng.getEmojiAliase(emojiMng.getRandomEmoji(), true))
+    }
+
+    // 結果表示用テキスト
+    let resultMfm = [
+      `$[border.style=hidden,radius=5 $[bg.color={color.secondary} $[fg.color={color.header} $[tada.speed=0s $[border.radius=30 $[bg.color=ccc0 $[scale.x=0.8,y=0.8 :{icon.name}:]]] <small>{player.getUsername()}</small>`
+      `　　 ¥{money.to_str()}]]`
+      `$[position $[bg.color={color.primary} $[fg.color={color.message} {messageShaping(18, hankaku_to_zenkaku(messages.join()))}]]]]]`
+    ].join(Str:lf)
+
+    // 結果表示UI更新
+    Ui:get("resultMfm").update({
+      text: [
+        `{player.getName()}さん`
+        `スーパーチャットありがとうございます。`
+        resultMfm
+      ].join(Str:lf)
+    })
+
+    // 投稿用テキスト
+    let postText = [
+      PLAY_NAME
+      resultMfm
+      TAG_NAME
+      PLAY_URL
+    ].join(Str:lf)
+
+    // 投稿用用UI更新
+    Ui:get("postFormButton").update({
+      text: "投稿する"
+      form: {
+        text: postText
+      }
+      primary: true
+      rounded: true
+    })
+
+    // UI表示・非表示
+    Ui:hidden("loading_area", true)
+    Ui:hidden("main_area", false)
+    Ui:hidden("post_area", false)
+  }
+  main()
+}
+
+Ui:render([
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 {PLAY_NAME}]`
+      }, "titleMfm")
+    ]
+    align: "center"
+    hidden: false
+  }, "title_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 $[bounce Now Loading...]]`
+      }, "loadingMfm")
+    ]
+    align: "center"
+  } "loading_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "resultMfm")
+    ]
+//    align: "center"
+    hidden: true
+  }, "main_area")
+  Ui:C:container({
+    children: [
+      Ui:C:postFormButton({}, "postFormButton")
+    ]
+    align: "center"
+    hidden: true
+  }, "post_area")
+])
+Game()

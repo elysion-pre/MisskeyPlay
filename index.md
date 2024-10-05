@@ -7,6 +7,9 @@
 ### 免責
 ソースの導入は自己責任でお願いします。
 
+### License
+[MIT License](LICENCE)
+
 ## Play一覧
 
 ### submarin.online

@@ -1,0 +1,111 @@
+/// @ 0.19.0
+// 今日の味噌汁
+// Copyright (c) 2024 @elysion
+// License: MIT License
+// https://github.com/elysion-pre/MisskeyPlay/blob/main/LICENSE
+
+let PLAY_NAME = "今日の味噌汁"
+let PLAY_URL = if exists THIS_URL THIS_URL else "https://msk.kitazawa.me/play/9kpwqxi4em"
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_NAME
+
+let random = eval {
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+// pagesのjsonデータ読み込み
+// https://{SERVER_URL}/@elysion/pages/ignore_emoji_data
+let MISO_SOUP_DATA = eval {
+  var data = null
+  let pages_data = Mk:api("pages/show", {
+    name: "misosoup_data"
+    username: "elysion"
+  })
+  if (Core:type(pages_data) == "error") {
+    Core:abort([
+      `pagesにデータが見つかりませんでした。`
+      `{SERVER_URL}/@elysion/pages/misosoup_data`
+      `プログラムを停止します。`
+    ].join(Str:lf))
+  } else {
+    data = Json:parse(pages_data.content[0].text)
+  }
+  data
+}
+
+@Game() {
+  
+  // 初期化
+  @init() {
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `具材読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+    main()
+  }
+  // メイン処理
+  @main() {
+    // (出汁 + 具) × 4
+    let miso_soups = []
+    for 4 {
+      miso_soups.push([
+        MISO_SOUP_DATA.DASHI_EMOJIS[random(0, (MISO_SOUP_DATA.DASHI_EMOJIS.len - 1))]
+        MISO_SOUP_DATA.GU_EMOJIS[random(0, (MISO_SOUP_DATA.GU_EMOJIS.len - 1))]
+      ].join())
+    }
+
+    // 結果表示用テキスト
+    let resultMfm = [
+      miso_soups.join(Str:lf)
+    ].join(Str:lf)
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: resultMfm
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:postFormButton({
+            text: "投稿する"
+            form: {
+              text: [
+                `<center>`
+                PLAY_NAME
+                resultMfm
+                PLAY_URL
+                `</center>`
+              ].join(Str:lf)
+            }
+            primary: true
+            rounded: true
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  // 描画
+  // param: components<arr>
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

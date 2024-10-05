@@ -44,7 +44,7 @@ Copyright (c) 2024 elysion
 - [きたざわカード](./page/kitazawa/9quc8vp8ry.md)
 - [ノアーﾉﾚを探せ](./page/kitazawa/9r4dbonkzl.md)
 - [おきんたま戦隊](./page/kitazawa/9rc0j6qzt3.md)
-- [ｱﾂｱﾂの😚❤️KISS](./page/kitazawa/9rn1fjsb6j.md)
+- [俺のｱﾂｱﾂの😚❤️KISS](./page/kitazawa/9rn1fjsb6j.md)
 - [他人のｱﾂｱﾂの😚❤️KISS](./page/kitazawa/9rneqzbgn8.md)
 - [気まぐれカスタム絵文字](./page/kitazawa/9rzua8426v.md)
 - [あなたの戦闘力](./page/kitazawa/9v7lf1q091.md)

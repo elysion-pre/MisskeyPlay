@@ -14,7 +14,20 @@ Copyright (c) 2024 elysion
 ## Play一覧
 
 ### submarin.online
-- [hoge](./page/submarin/fugafuga.md)
+デイリー
+- [今日のカスタム絵文字](./page/submarin/fugafuga.md)
+- [今日のスパチャ](./page/submarin/fugafuga.md)
+- [今日のさんまぶりカード](./page/submarin/fugafuga.md)
+
+それ以外
+- [さんまぶりスロット](./page/submarin/9scg0eomec.md)
+- [さんまぶりスロット(難)](./page/submarin/9scovkaiau.md)
+- [俺のｱﾂｱﾂの😚❤️KISS](./page/submarin/9scr3d3ljh.md)
+- [気まぐれカスタム絵文字](./page/submarin/9scukcuqsm.md)
+- [さんまぶり俳句](./page/submarin/9sd0zgazmq.md)
+- [あんにんやガチャ](./page/submarin/9seoknmtqm.md)
+- [初めてのノート](./page/submarin/9v6obzef07.md)
+- [さんまぶりカード](./page/submarin/9wpzr2j1d5.md)
 
 ### msk.kitazawa.me
 デイリー

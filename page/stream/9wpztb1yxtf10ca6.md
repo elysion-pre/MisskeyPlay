@@ -1,4 +1,4 @@
-# STREAMカード
+# Streamカード
 
 * TOC
 {:toc}

@@ -30,7 +30,7 @@ https://msk.kitazawa.me/play/9vutr0h6cy
 
 ## ソース
 
-[9vutr0h6cy.is](./../src/kitazawa/9vutr0h6cy.is)
+[9vutr0h6cy.is](./../../src/kitazawa/9vutr0h6cy.is)
 
 ----
 

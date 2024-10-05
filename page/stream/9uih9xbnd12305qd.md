@@ -1,4 +1,4 @@
-# STREAM俳句
+# Stream俳句
 
 * TOC
 {:toc}

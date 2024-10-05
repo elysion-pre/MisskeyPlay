@@ -1,0 +1,135 @@
+/// @ 0.18.0
+// あなたの戦闘力
+// Copyright (c) 2024 @elysion
+// License: MIT License
+// https://github.com/elysion-pre/MisskeyPlay/blob/main/LICENSE
+
+let PLAY_NAME = "あなたの戦闘力"
+let PLAY_TAG = "#自分の戦闘力上げてけ"
+let PLAY_URL = if exists THIS_URL THIS_URL else "https://msk.kitazawa.me/play/9sk84yujhh"
+
+@Game() {
+  // 結果表示テキスト
+  let resultMfm = []
+  // ユーザーの情報を取得
+  let user = Mk:api("users/show", {
+    userId: USER_ID
+  })
+  let archivements = Mk:api("users/achievements", {
+    userId: USER_ID
+  })
+  match Core:type(user) {
+    "error" => {
+      Mk:dialog(user.name, "ユーザー情報が取得できませんでした。", "error")
+      resultMfm.push([
+        user.name
+        Json:stringify(user.info)
+      ].join(Str:lf))
+      // 結果表示UI更新
+      Ui:get("resultMfm").update({
+        text: resultMfm.join(Str:lf)
+      })
+      // UI表示・非表示
+      Ui:get("loading_area").update({ hidden: true })
+      Ui:get("main_area").update({ hidden: false })
+    }
+    "obj" => {
+      let note_score = Math:floor(user.notesCount * 0.1)
+      let ff_score = ((user.followersCount - user.followingCount) * 10)
+      let days_score = (Math:floor((Date:now() - Date:parse(user.createdAt)) / 86400000) * 100)
+      let archivements_score = (archivements.len * 50)
+      let power = note_score + ff_score + days_score + archivements_score
+      resultMfm.push(`$[fg.color=f00 ***{power}***]`)
+
+      // 結果表示UI更新
+      Ui:get("resultMfm").update({
+        text: resultMfm.join(Str:lf)
+      })
+
+      // 情報表示UI更新
+      Ui:get("infoMfm").update({
+        text: [
+          `<small><small>`
+          `スコア1: ノート数({user.notesCount}) × 0.1 = $[fg.color=f00 {note_score}]`
+          `スコア2: フォロワー数({user.followersCount}) - フォロー数({user.followingCount}) × 10 = $[fg.color=f00 {ff_score}]`
+          `スコア3: 始めて何日({Math:floor((Date:now() - Date:parse(user.createdAt)) / 86400000)}) × 100 = $[fg.color=f00 {days_score}]`
+          `スコア4: [実績]({SERVER_URL}/my/achievements)解除数({archivements.len}) × 50 = $[fg.color=f00 {archivements_score}]`
+          `戦闘力: {note_score} + {ff_score} + {days_score} + {archivements_score} = {power}`
+          `</small></small>`
+        ].join(Str:lf)
+      })
+
+      // 投稿用テキスト
+      let postText = [
+        `<center>`
+        PLAY_NAME
+        resultMfm.join(Str:lf)
+        PLAY_TAG
+        PLAY_URL
+        `</center>`
+      ].join(Str:lf)
+
+      // 投稿UI更新
+      Ui:get("postFormButton").update({
+        text: "投稿する"
+        form: {
+          text: postText
+        }
+        primary: true
+        rounded: true
+      })
+      // UI表示・非表示
+      Ui:get("loading_area").update({ hidden: true })
+      Ui:get("main_area").update({ hidden: false })
+      Ui:get("info_area").update({ hidden: false })
+      Ui:get("post_area").update({ hidden: false })
+    }
+  }
+}
+
+Ui:render([
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 {PLAY_NAME}]`
+      }, "titleMfm")
+    ]
+    align: "center"
+  } "title_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 $[bounce Now Loading...]]`
+      }, "loadingMfm")
+    ]
+    align: "center"
+  } "loading_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "resultMfm")
+    ]
+    align: "center"
+    hidden: true
+  }, "main_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "infoMfm")
+    ]
+    hidden: true
+  }, "info_area")
+  Ui:C:container({
+    children: [
+      Ui:C:postFormButton({}, "postFormButton")
+    ]
+    align: "center"
+    hidden: true
+  }, "post_area")
+])
+if (USER_ID != null) {
+  Game()
+} else {
+  Mk:dialog("", [
+    "ユーザーIDが見つかりませんでした"
+    "ログインしてから遊んでみてね"
+  ].join(Str:lf), "error")
+}

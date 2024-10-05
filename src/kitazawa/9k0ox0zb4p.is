@@ -2,7 +2,7 @@
 // きたざわシャツ
 // 参考: Preset -> Shuffle
 // Copyright (c) 2024 @elysion
-// Released under the MIT license
+// This script is licensed under the MIT
 // https://opensource.org/licenses/mit-license.php
 
 let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9jwc5kdl75`

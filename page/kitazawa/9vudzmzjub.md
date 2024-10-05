@@ -13,7 +13,7 @@ https://msk.kitazawa.me/play/9vudzmzjub
 
 ## ソース
 
-[9vudzmzjub.is](./../src/kitazawa/9vudzmzjub.is)
+[9vudzmzjub.is](./../../src/kitazawa/9vudzmzjub.is)
 
 ----
 

@@ -1,7 +1,7 @@
 /// @ 0.18.0
 // あなたの戦闘力
 // Copyright (c) 2024 @elysion
-// Released under the MIT license
+// This script is licensed under the MIT
 // https://opensource.org/licenses/mit-license.php
 
 let PLAY_NAME = "あなたの戦闘力"

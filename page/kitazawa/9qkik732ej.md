@@ -13,7 +13,7 @@ https://msk.kitazawa.me/play/9qkik732ej
 
 ## ソース
 
-[9qkik732ej.is](./../src/kitazawa/9qkik732ej.is)
+[9qkik732ej.is](./../../src/kitazawa/9qkik732ej.is)
 
 ----
 

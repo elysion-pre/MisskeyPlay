@@ -1,4 +1,4 @@
-# STREAMスロット(難)
+# Streamスロット(難)
 
 * TOC
 {:toc}

@@ -1,0 +1,152 @@
+/// @ 0.18.0
+// きたざわクリックアーン
+// Copyright (c) 2024 @elysion
+// License: MIT License
+// https://github.com/elysion-pre/MisskeyPlay/blob/main/LICENSE
+
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9w66sr0466`
+let PLAY_TAG = "#KITAZAWA_CLICKER"
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
+
+@Game() {
+  var count_down = 3
+  var game_count = 5
+  var a_n_count = 0
+
+  @init() {
+    count_down = 3
+    game_count = 5
+    a_n_count = 0
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `【ルール】`
+              `$[clickable.ev=a_n :a_n:]を連打して5秒間喘げ`
+              ``
+              `【ゲーム開始】`
+              `$[clickable.ev=a_n :a_n:]を押すと３カウント後にスタート`
+              ``
+              `$[clickable.ev=a_n $[x3 :a_n:]]`
+            ].join(Str:lf)
+            onClickEv: @(id) {
+              match id {
+                "a_n" => {
+                  ready()
+                }
+                * => {
+                  Mk:dialog("", "こっちじゃないよ")
+                }
+              }
+            }
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  @ready() {
+    if (count_down > 0) {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: [
+                `$[x3 {count_down}]`
+              ].join(Str:lf)
+            })
+          ]
+          align: "center"
+        })
+      ])
+      count_down -= 1
+      Async:timeout(1000, ready)
+    } else {
+      main()
+    }
+  }
+  @main() {
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x3 $[clickable.ev=a_n $[twitch :a_n:]]]`
+            ].join(Str:lf)
+            onClickEv: @(id) {
+              match id {
+                "a_n" => {
+                  a_n_count += 1
+                }
+              }
+            }
+          })
+        ]
+        align: "center"
+      })
+    ])
+    Async:timeout(1000 * game_count, Finish)
+  }
+  @Finish() {
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: `$[x3 ***終了***]`
+          })
+        ]
+        align: "center"
+      })
+    ])
+    Async:timeout(1000 * 3, result)
+  }
+  @result() {
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `結果`
+              `$[tada.speed=0s ***{a_n_count}:a_n:***]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:button({
+            text: "もう一度"
+            onClick: @() {
+              init()
+            }
+          })
+          Ui:C:postFormButton({
+            text: "投稿する"
+            form: {
+              text: [
+                `<center>`
+                `$[tada.speed=0s ***{a_n_count}:a_n:***]`
+                PLAY_TAG
+                PLAY_URL
+                `</center>`
+              ].join(Str:lf)
+            }
+            primary: true
+            rounded: true
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  // 描画
+  // param: component<arr>
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

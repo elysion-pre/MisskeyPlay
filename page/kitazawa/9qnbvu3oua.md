@@ -17,7 +17,7 @@ https://msk.kitazawa.me/play/9qnbvu3oua
 
 ## ソース
 
-[9qnbvu3oua.is](./../src/kitazawa/9qnbvu3oua.is)
+[9qnbvu3oua.is](./../../src/kitazawa/9qnbvu3oua.is)
 
 ----
 

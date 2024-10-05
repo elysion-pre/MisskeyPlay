@@ -1,0 +1,444 @@
+/// @ 0.18.0
+// スロット
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let PLAY_NAME = eval {
+  match SERVER_URL {
+    "https://submarin.online" => { "さんまぶりスロット" }
+    "https://msk.kitazawa.me" => { "きたざわスロット" }
+    "https://misskey.stream" => { "STREAMスロット" }
+    * => { `{SERVER_URL}スロット` }
+  }
+}
+let PLAY_TAG =  eval {
+  match SERVER_URL {
+    "https://submarin.online" => { "#SUBMARIN_SLOT" }
+    "https://msk.kitazawa.me" => { "#KITAZAWA_SLOT" }
+    "https://misskey.stream" => { "#STREAM_SLOT" }
+    * => ""
+  }
+}
+let PLAY_URL = eval {
+  if exists THIS_URL THIS_URL
+  else {
+    match SERVER_URL {
+      "https://submarin.online" => { `{SERVER_URL}/play/9scg0eomec` }
+      "https://msk.kitazawa.me" => { `{SERVER_URL}/play/9n1sj9k890` }
+      "https://misskey.stream" => { `{SERVER_URL}/play/9te0mbzqf3` }
+      * => ""
+    }
+  }
+}
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_NAME
+
+let random = eval {
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+// 除外する絵文字のカテゴリ
+// pagesのjsonデータ読み込み
+// https://{SERVER_URL}/@elysion/pages/ignore_emoji_data
+let IGNORE_EMOJI_LIST = eval {
+  var data = null
+  let pages_data = Mk:api("pages/show", {
+    name: "ignore_emoji_data"
+    username: "elysion"
+  })
+  if (Core:type(pages_data) == "error") {
+    data = { category: [ null ] }
+  } else {
+    data = Json:parse(pages_data.content[0].text)
+  }
+  data
+}
+
+@EmojiManager() {
+  let this = {
+    obj: {}
+    categories: []
+    // コンストラクタ
+    constructor: @() {
+      // 除外カテゴリ以外の絵文字抽出
+      this.obj = CUSTOM_EMOJIS.filter(@(emoji) {
+        !IGNORE_EMOJI_LIST.category.incl(emoji.category)
+      })
+      // カテゴリー抽出
+      var prev_category = ""
+      for (let i = 0, (this.obj.len - 1)) {
+        if (prev_category != this.obj[i].category) {
+          this.categories.push(this.obj[i].category)
+        }
+        prev_category = this.obj[i].category
+      }
+      this
+    }
+    // 絵文字カテゴリを返す
+    // return: <arr>
+    getCategories: @() {
+      this.categories
+    }
+    // 絵文字を返す
+    // param: name<str>
+    // return: <arr>
+    getEmoji: @(name) {
+      this.obj.filter(@(v) {
+        (v.name == name)
+      }).pop()
+    }
+    // ランダムな絵文字を返す
+    // return: <obj>
+    getRandomEmoji: @() {
+      this.obj[random(0, (this.obj.len - 1))]
+    }
+    // カテゴリー内の絵文字を返す
+    // param: category<str>
+    // return: <arr>
+    getCategoryEmojis: @(category) {
+      this.obj.filter(@(emoji) {
+        emoji.category == category
+      })
+    }
+    // 絵文字のエイリアスを返す
+    // param: emoji<obj>
+    // return: <arr>
+    getEmojiAliases: @(emoji) {
+      var aliases = []
+      // 絵文字追加直後はaliasesに何も入っていない場合がある
+      if (emoji["aliases"].len > 0) {
+        // ""の場合
+        if (emoji["aliases"][0] == "") {
+          // emoji.nameを返す
+          aliases.push(emoji["name"])
+        } else {
+          // エイリアスを返す
+          aliases = emoji["aliases"]
+        }
+      } else {
+        // emoji.nameを返す
+        aliases.push(emoji["name"])
+      }
+      aliases
+    }
+    // 絵文字のエイリアスを返す(fRand = trueでランダム)
+    // param: emoji<obj>
+    // param: fRand<bool>
+    // return: <str>
+    getEmojiAliase: @(emoji, fRand) {
+      var aliase = ""
+      var aliases = this.getEmojiAliases(emoji)
+      if (fRand) {
+        // ランダムでエイリアスを返す
+        aliase = aliases[random(0, (aliases.len - 1))]
+      } else {
+        // エイリアスの先頭を返す
+        aliase = aliases[0]
+      }
+      aliase
+    }
+  }
+  this.constructor()
+}
+
+@Game() {
+  var emojiMng = null
+  var select_category = ""
+  var select_category_emojis = []
+  var select_category_items = []
+  var marks = []
+  var wait = 0
+  let reel = 3
+
+  // 初期設定
+  @init() {
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `カスタム絵文字読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    emojiMng = EmojiManager()
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `カテゴリ選択肢作成中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    // カテゴリ選択肢作成
+    select_category_items = []
+    each (let category, emojiMng.getCategories()) {
+      select_category_items.push({
+        text: `{category}({emojiMng.getCategoryEmojis(category).len})`
+        value: category
+      })
+    }
+
+    // カテゴリ(ランダム)
+    let categories = emojiMng.getCategories()
+    createMark(categories[random(0, (categories.len - 1))])
+
+    main()
+  }
+  // 絵柄選定
+  // param: category<str>
+  @createMark(category) {
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `カテゴリの絵文字を読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    select_category = category
+    marks = []
+    // カテゴリ(ランダム)の絵文字を取得
+    select_category_emojis = emojiMng.getCategoryEmojis(category)
+
+    // 選択されたカテゴリの絵文字数が6以下の場合、
+    // ランダムで追加する
+    if (6 > select_category_emojis.len) {
+      loop {
+        if (select_category_emojis.len == 6) break
+
+        let emoji = emojiMng.getRandomEmoji()
+        // 被っていなかったら追加
+        if (select_category_emojis.filter(@(v) {
+          v.name == emoji.name
+        }).len == 0) {
+          select_category_emojis.push(emoji)
+        }
+      }
+    }
+
+    // 絵文字選出(被りなし6種)
+    loop {
+      if (marks.len == 6) break
+
+      let emoji = select_category_emojis[random(0, (select_category_emojis.len - 1))]
+      // 被っていなかったら追加
+      if (!marks.incl(`:{emoji.name}:`)) {
+        marks.push(`:{emoji.name}:`)
+      }
+    }
+  }
+  // もう一度
+  @replay() {
+    wait = 0
+    main()
+  }
+  // リロード
+  // param: category<str>
+  @reload(category) {
+    createMark(category)
+
+    wait = 0
+    main()
+  }
+  // メイン処理
+  @main() {
+    var hands = []
+    if (wait < 20) {
+      hands = []
+      for reel {
+        hands.push(marks[random(0, (marks.len - 1))])
+      }
+
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: `$[x2 {hands.join()}]`
+            })
+          ]
+          align: "center"
+        })
+      ])
+
+      wait += 1
+      Async:timeout(100, main)
+    } else {
+      result()
+    }
+  }
+  // 結果処理
+  @result() {
+    let hands = []
+    for reel {
+      hands.push(marks[random(0, (marks.len - 1))])
+    }
+    // 結果表示用
+    let resultMfm = []
+    if (isSameMark(hands)) {
+      var mfm = ""
+      let rand = random(0, 120)
+      match true {
+        (rand >= 100) => { mfm = "bounce " }
+        (rand >=  80) => { mfm = "jump " }
+        (rand >=  60) => { mfm = "jelly " }
+        (rand >=  40) => { mfm = "tada " }
+        (rand >=  20) => { mfm = "shake.speed=1s " }
+        * => { mfm = "twitch.speed=1s " }
+      }
+      resultMfm.push("$[sparkle ")
+      each (let hand, hands) {
+        resultMfm.push(`$[{mfm} {hand}]`)
+      }
+      resultMfm.push("]")
+    } else {
+      resultMfm.push(hands.join())
+    }
+
+    // 投稿用テキスト
+    let postText = [
+      `<center>`
+      `$[x2 {resultMfm.join()}]`
+      PLAY_TAG
+      PLAY_URL
+      `</center>`
+    ].join(Str:lf)
+
+    // 確率表記テキスト
+    let probabilityMfm = [
+      `<small>⚠️{reel}つのリールでゾロ目({marks.len}種)が出る確率`
+      `約{calcProbability(reel, marks.len)}%</small>`
+    ].join(Str:lf)
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: `$[x2 {resultMfm.join()}]`
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: probabilityMfm
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+           Ui:C:button({
+            text: "もう一度"
+            onClick: replay
+          })
+          Ui:C:select({
+            items: select_category_items
+            onChange: @(value) {
+              reload(value)
+            }
+            label: "絵柄を再選定してもう一度"
+            caption: "カテゴリを選択すると絵柄を再選出します。"
+          })
+          Ui:C:postFormButton({
+            text: "投稿する"
+            form: {
+              text: postText
+            }
+            primary: true
+            rounded: true
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:folder({
+            children: [
+              Ui:C:mfm({
+                text: [
+                  `Category: {select_category}`
+                ].join(Str:lf)
+              })
+              Ui:C:mfm({
+                text: [
+                  `選出された絵柄({marks.len})`
+                  marks.join()
+                ].join(Str:lf)
+              })
+              Ui:C:mfm({
+                text: [
+                  `すべての絵柄({select_category_emojis.len})`
+                  select_category_emojis.map(@(v) {
+                    `:{v.name}:`
+                  }).join()
+                ].join(Str:lf)
+              })
+            ]
+            title: "絵柄情報"
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  // 絵柄が全て同じかどうか
+  // param: hands<arr>
+  // return: <bool>
+  @isSameMark(hands) {
+    var i = 0
+    loop {
+      if (i == (hands.len - 1)) break
+      if (hands[i] == hands[i+1]) i += 1 else break
+    }
+    if (i == (hands.len - 1)) {
+      return true
+    }
+    return false
+  }
+  // 確率表記
+  // param: reel_num<num>
+  // param: mark_num<num>
+  // return: <num>
+  @calcProbability(reel_num, mark_num) {
+    var p = mark_num
+    for (reel_num - 1) {
+      p = p * mark_num
+    }
+    p = ((1 / p) * mark_num) * 100
+    p = Math:floor(p * 100) / 100
+    p
+  }
+  // 描画
+  // param: component<arr>
+  @render(component) {
+    Ui:render(component)
+  }
+  init()
+}
+Game()

@@ -1,0 +1,927 @@
+/// @ 0.18.0
+// ふらっぴーきたざわ
+// Copyright (c) 2024 @elysion
+// License: MIT License
+// https://github.com/elysion-pre/MisskeyPlay/blob/main/LICENSE
+
+let PLAY_NAME = "ふらっぴーきたざわ"
+let TAG_NAME = "#FLAPPY_KITAZAWA"
+let PLAY_URL = if exists THIS_URL THIS_URL else "https://msk.kitazawa.me/play/9p6mbptl7d"
+
+let MK_DATA_LABEL = `@{USER_ID}/ranking_lists`
+
+let random = eval {
+  var id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「ユーザーID+ミリ秒」である乱数生成器を用意
+  Math:gen_rng(`{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+:: Arr {
+  // ランダムで配列の値を返す
+  // param: array<arr>
+  // return: <arr[0~(arr.len - 1)]>
+  @randomSelect(array) {
+    array[random(0, (array.len - 1))]
+  }
+  // 指定の配列を削除した配列を返す
+  // param: array<arr>
+  // param: index<num>
+  // return: <arr>
+  @splice(array, index) {
+    array.slice(0, index).concat(array.slice((index + 1), array.len))
+  }
+}
+
+:: Ui {
+  // 指定UIのhidden処理
+  // param: name<str>
+  // param: f<bool>
+  @hidden(name, f) {
+    Ui:get(name).update({
+      hidden: f
+    })
+  }
+  // 指定UIのdisabled処理
+  // param: name<str>
+  // param: f<bool>
+  @disabled(name, f) {
+    Ui:get(name).update({
+      disabled: f
+    })
+  }
+}
+
+// IGNORE_ENCODE_LIST
+let IGNORE_ENCODE_LIST = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567890-_.!~'()".to_utf8_byte_arr().sort(@(a, b) { (a - b) })
+
+@encodeURIComponent(str) {
+  let encode_text = []
+  let utf8_byte_arr = str.to_arr().map(@(v) {
+    v.to_utf8_byte_arr()
+  })
+  each (let utf8_bytes, utf8_byte_arr) {
+    if (utf8_bytes.len == 1) {
+      if (IGNORE_ENCODE_LIST.incl(utf8_bytes[0])) {
+        encode_text.push(Str:from_utf8_bytes(utf8_bytes))
+        continue
+      }
+    }
+    each (let utf8_byte, utf8_bytes) {
+      var hex = Num:to_hex(utf8_byte)
+      if (hex.len == 1) {
+        hex = `0{hex}`
+      }
+      encode_text.push(`%{hex}`)
+    }
+  }
+  encode_text.join()
+}
+
+// 除外する絵文字のカテゴリ
+// pagesのjsonデータ読み込み
+// https://msk.kitazawa.me/@elysion/pages/ignore_emoji_data
+let IGNORE_EMOJI_LIST = eval {
+  let pages_data = Mk:api("pages/show", {
+    name: "ignore_emoji_data"
+    username: "elysion"
+  })
+  let content = pages_data.content[0]
+  let raw_text = content.text
+
+  Json:parse(raw_text)
+}
+
+// 絵文字
+var EMOJIS = []
+// カテゴリ
+let CATEGORIES = []
+// 絵文字オブジェクト
+let EMOJI_OBJ = {}
+
+// セーブデータ
+var save_data = []
+
+@player() {
+  let this = {
+    name: "",
+    pos: { x: 0, y: 0 },
+    d: { x: 0, y: 0 },
+    deg: 0,
+    sprite: "",
+
+    constructor: @() {
+      this.name = ""
+      this.pos = { x: 0, y: 0.0 }
+      this.d = { x: 0, y: 0 }
+      this.deg = 0
+      this.sprite = ""
+      this
+    }
+    setup: @() {
+      this.pos = { x: 0, y: -5.0 }
+      this.d = { x: 0.25, y: -0.2 }
+      this.deg = -45
+    }
+    setName: @(name) { this.name = name }
+    setPos: @(pos) { this.pos = pos }
+    setD: @(d) { this.d = d }
+    setDeg: @(deg) { this.deg = deg }
+    setSprite: @(sprite) { this.sprite = sprite }
+  }
+  this.constructor()
+}
+
+var FPS = 1000
+
+var old_time = Date:now()
+var new_time = Date:now()
+
+var pre_level = 0
+var level = 0
+
+var blocks = []
+let BLOCK = "$[rotate.deg=-90 :icon_kitazawamisuki:]"
+let FLOOR = "$[bg.color=80ff00 :tp:]"
+
+let EFFECT = ":gya_su:"
+let EFFECTS = [
+  ":a_n:",
+  ":egu:",
+  ":gya_su:",
+  ":hiun:",
+  ":owa_:"
+]
+
+let UI_COLOR = "a6a6a6"
+
+let pl = player()
+
+// 初期化
+// 読み込み周りの処理
+@gameInitialize() {
+  let ui_area_name = "initialize_area"
+  Ui:hidden(ui_area_name, false)
+
+  // セーブデータ読み込み
+  save_data = Mk:load(MK_DATA_LABEL)
+  if (save_data == null) {
+    resetRankingData()
+    save_data = Mk:load(MK_DATA_LABEL)
+  }
+
+  // 絵文字読み込み
+  EMOJIS = CUSTOM_EMOJIS.filter(@(emoji) {
+    !IGNORE_EMOJI_LIST.category.incl(emoji.category)
+  })
+
+  var prev_category = ""
+  for (let i = 0, (EMOJIS.len - 1)) {
+    if (prev_category != EMOJIS[i].category) {
+      CATEGORIES.push(EMOJIS[i].category)
+    }
+    prev_category = EMOJIS[i].category
+  }
+
+  each (let category, CATEGORIES) {
+    Obj:set(EMOJI_OBJ, category, EMOJIS.filter(@(v) {
+      v.category == category
+    }))
+  }
+
+  Ui:hidden(ui_area_name, true)
+  gameTitle()
+}
+
+// タイトル画面
+@gameTitle() {
+  let ui_area_name = "title_area"
+
+  let emojis = [
+    Arr:randomSelect(EMOJIS)
+    Arr:randomSelect(EMOJIS)
+  ]
+
+  // タイトルに表示するUIデータ
+  Ui:get("titleMfm").update({
+    text: [
+      `$[position.y=1.4 $[blur $[rainbow.speed=3s $[x2 $[fg.color=fff436 **{PLAY_NAME}**]]]]]`
+      `$[position.y=-1.4 $[x2 $[fg.color=89e555 **{PLAY_NAME}**]]]`
+      `$[bounce.speed=1s :{emojis[0].name}:] $[fg.color=89e555 きたざわ]$[fg.color=fff436 ★]$[fg.color=89e555 みすき] $[bounce.speed=1s :{emojis[1].name}:]`
+      `<small><small>※PCでのプレイ推奨</small></small>`
+   ].join(Str:lf)
+  })
+  Ui:get("startButton").update({
+    text: "　　　スタート！　　　"
+    onClick: @() {
+      Ui:hidden(ui_area_name, true)
+      gameCharacterSelect()
+    }
+    primary: true
+    rounded: true
+  })
+  Ui:get("rankingButton").update({
+    text: "　　　ランキング　　　"
+    onClick: @() {
+      Ui:hidden(ui_area_name, true)
+      gameRanking()
+    }
+    primary: true
+    rounded: true
+  })
+  Ui:get("optionButton").update({
+    text: "　　　オプション　　　"
+    onClick: @() {
+      Ui:hidden(ui_area_name, true)
+      gameOption()
+    }
+    primary: true
+    rounded: true
+  })
+
+  Ui:hidden(ui_area_name, false)
+}
+
+// キャラクター選択画面
+@gameCharacterSelect() {
+  let ui_area_name = "characterselect_area"
+
+  var select_category = ""
+  var select_category_emoji = ""
+
+  // エイリアスの取得
+  @get_emoji_aliase(obj) {
+    var aliase = ""
+    // 絵文字追加直後はaliasesに何も入っていない場合がある
+    if (obj["aliases"].len > 0) {
+      // ""の場合
+      if (obj["aliases"][0] == "") {
+        // emoji.nameを返す
+        aliase = obj["name"]
+      } else {
+        // エイリアスの先頭を返す
+        aliase = obj["aliases"][0]
+      }
+    } else {
+      // emoji.nameを返す
+      aliase = obj["name"]
+    }
+    return aliase
+  }
+  // select: カテゴリ変更イベント
+  @change_category(value) {
+    // 絵文字決定ボタン
+    Ui:get("emojiselectconfirmButton").update({
+      disabled: true
+    })
+    select_category = value
+
+    let select_obj = EMOJI_OBJ[select_category]
+
+    var emoji_items = []
+    for (let i = 0, select_obj.len) {
+      //エイリアスの取得
+      let aliase = get_emoji_aliase(select_obj[i])
+      emoji_items.push({
+        text: `{aliase}(:{select_obj[i]["name"]}:)`
+        value: select_obj[i]["name"]
+      })
+    }
+    select_category_emoji = emoji_items[0].value
+
+    Ui:get("emojinameSelect").update({
+      items: emoji_items
+      onChange: @(value) {
+        change_emoji(value)
+      }
+      default: select_category_emoji
+      label: `絵文字({select_obj.len})`
+    })
+    // 絵文字決定ボタン
+    Ui:get("emojiselectconfirmButton").update({
+      disabled: false
+    })
+  }
+  // select: 絵文字変更イベント
+  @change_emoji(value) {
+    select_category_emoji = value
+
+    let emoji_name = `:{select_category_emoji}:`
+
+    Ui:get("emojinameMfm").update({
+      text: `$[x2 {emoji_name}]`
+    })
+  }
+
+  // キャラデータ
+  let chara_data = [
+    {
+      sprite: "$[flip :mimichan_sakanano:]",
+      name: "みみちゃん",
+    },
+    {
+      sprite: "❓",
+      name: "ランダム",
+    }
+  ]
+
+  // メッセージ表示用データ
+  let csMsgMfm = []
+  // ボタンデータ
+  let button_data = []
+
+  // 絵文字決定ボタン
+  Ui:get("emojiselectconfirmButton").update({
+    disabled: true
+  })
+
+  each (let data, chara_data) {
+    var sprite = data.sprite
+    csMsgMfm.push(sprite)
+    button_data.push({
+      text: data.name,
+      onClick: @() {
+        var name = data.name
+        if (data.name == "ランダム") {
+          let emoji = EMOJIS[random(0, (EMOJIS.len - 1))]
+          name = get_emoji_aliase(emoji)
+          sprite = `:{emoji.name}:`
+        }
+        if (Mk:confirm(name, [
+            `$[x2 $[bounce {sprite}]]`
+            `このキャラにしますか？`
+          ].join(Str:lf), "info")) {
+
+          pl.setSprite(sprite)
+          pl.setName(name)
+
+          Ui:hidden(ui_area_name, true)
+          gameMain()
+        }
+      }
+      primary: true
+      rounded: true
+    })
+  }
+
+  Ui:get("characterselectMfm").update({
+    text: "$[x2 キャラクター選択]"
+  })
+  Ui:get("characterselectMsgMfm").update({
+    text: [
+      "<small>操作キャラクターを選択してください</small>"
+      ""
+      `$[x2 {csMsgMfm.join("　　")}]`
+    ].join(Str:lf)
+  })
+  Ui:get("characterselectButtons").update({
+    buttons: button_data
+  })
+  Ui:get("characterselectReturnButton").update({
+    text: "戻る"
+    onClick: @() {
+      Ui:hidden(ui_area_name, true)
+      gameTitle()
+    }
+  })
+  
+  // select周り
+  select_category = CATEGORIES[0]
+
+  Ui:get("characterselectFolder").update({
+    title: "カスタム絵文字から選択"
+    opened: true
+  })
+
+  // select: カテゴリ
+  let category_items = []
+  each (let category, CATEGORIES) {
+    category_items.push({
+      text: category
+      value: category
+    })
+  }
+  Ui:get("emojicategorySelect").update({
+    items: category_items
+    default: select_category
+    onChange: @(value) {
+      change_category(value)
+    }
+    label: `カテゴリ({CATEGORIES.len})`
+  })
+  change_category(select_category)
+  change_emoji(select_category_emoji)
+
+  // 絵文字決定ボタン
+  Ui:get("emojiselectconfirmButton").update({
+    text: "決定"
+    onClick: @() {
+      // 絵文字のエイリアス取得
+      let obj = EMOJI_OBJ[select_category].filter(@(v) {
+        v.name == select_category_emoji
+      })
+      let aliase = get_emoji_aliase(obj[0])
+
+      let data = {
+         sprite: `:{select_category_emoji}:`
+         name: aliase
+      }
+      if (Mk:confirm(data.name, [
+          `$[x2 $[bounce {data.sprite}]]`
+          `このキャラにしますか？`
+        ].join(Str:lf), "info")) {
+
+        pl.setSprite(data.sprite)
+        pl.setName(data.name)
+
+        Ui:hidden(ui_area_name, true)
+        gameMain()
+      }
+    }
+    primary: true
+    rounded: true
+    disabled: false
+  })
+
+  Ui:hidden(ui_area_name, false)
+}
+
+// ランキング画面
+@gameRanking() {
+  let ui_area_name = "ranking_area"
+
+  var rankingMsgMfm = []
+  for (let i = 0, save_data.len) {
+    rankingMsgMfm.push([
+      `{padStart((i + 1), 2, "0")}: `
+      `{save_data[i].sprite} `
+      `{padStart(save_data[i].level, 5, "0")} `
+      `<small><small>{save_data[i].date}</small></small>`
+    ].join())
+  }
+
+  Ui:get("rankingMfm").update({
+    text: "$[x2 ランキング]"
+  })
+  Ui:get("rankingMsgMfm").update({
+    text: rankingMsgMfm.join(Str:lf)
+  })
+  Ui:get("rankingReturnButton").update({
+    text: "戻る"
+    onClick: @() {
+      Ui:hidden(ui_area_name, true)
+      gameTitle()
+    }
+  })
+
+  Ui:hidden(ui_area_name, false)
+}
+
+// オプション画面
+@gameOption() {
+  let ui_area_name = "option_area"
+
+  Ui:get("optionMfm").update({
+    text: "$[x2 オプション]"
+  })
+  Ui:get("optionMsgMfm").update({
+    text: [
+      `<small>オプションを選択してください</small>`
+    ].join(Str:lf)
+  })
+/*
+  Ui:get("optionHoge00Button").update({
+    text: "　　　　　オプション１　　　　　"
+    onClick: @() {
+      Mk:dialog("情報", [
+        "なんもないよ"
+        "$[x2 :sonnannaiyo::mimichan_sakanano:]"
+      ].join(Str:lf))
+    }
+  })
+*/
+  Ui:get("optionHoge01Button").update({
+    text: "　　　　　　　参考　　　　　　　"
+    onClick: @() {
+      Mk:dialog("", [
+         `**制作者**`
+         `https://misskey.io/@gozaru 様`
+         `**PLAY URL**`
+         `[FlappyUsachan](https://misskey.io/play/9bdogbc786)`
+      ].join(Str:lf))
+    }
+  })
+  Ui:get("optionResetRankingButton").update({
+    text: "　　ランキングデータの初期化　　"
+    onClick: @() {
+      if (Mk:confirm("確認", [
+          "ランキングデータをリセットしますか？"
+          "$[x2 :majikaw::mimichan_sakanano:]"
+        ].join(Str:lf), "warning")) {
+        resetRankingData()
+        Mk:dialog("完了", [
+          "ランキングデータをリセットしました。"
+          "$[x2 :orenitehakaizumi::mimichan_sakanano:]"
+        ].join(Str:lf))
+      }
+    }
+  })
+  Ui:get("optionReturnButton").update({
+    text: "戻る"
+    onClick: @() {
+      Ui:hidden(ui_area_name, true)
+      gameTitle()
+    }
+  })
+
+  Ui:hidden(ui_area_name, false)
+}
+
+// ゲーム画面
+@gameMain() {
+  let ui_area_name = "game_area"
+
+  // 初期設定
+  @init() {
+    level = 0
+    pre_level = -1
+
+    pl.setup()
+    pl.setPos({ x: 0, y: -5 })
+    pl.setD({ x: 0.25, y: -0.5 })
+
+    blocks = [
+      { x: 15.0, y: -4.0, r: 2.2 },
+      { x: 30.0, y: -6.0, r: 2.2 },
+      { x: 45.0, y: -8.0, r: 2.2 }
+    ]
+
+    // メイン表示用データ
+    Ui:get("gameMfm").update({
+      text: [
+        `$[position.x={blocks[0].x - pl.pos.x},y={blocks[0].y + (2.0 * 5) - (0 * 2.5)} $[scale.x=1.25,y=1.25 $[scale.x=1.5,y={blocks[0].r} $[rotate.deg=90 {BLOCK}{BLOCK}　　　{BLOCK}{BLOCK}]]]]`
+        `$[position.x={blocks[1].x - pl.pos.x},y={blocks[1].y + (2.0 * 5) - (1 * 2.5)} $[scale.x=1.25,y=1.25 $[scale.x=1.5,y={blocks[1].r} $[rotate.deg=90 {BLOCK}{BLOCK}　　　{BLOCK}{BLOCK}]]]]`
+        `$[position.x={blocks[2].x - pl.pos.x},y={blocks[2].y + (2.0 * 5) - (2 * 2.5)} $[scale.x=1.25,y=1.25 $[scale.x=1.5,y={blocks[2].r} $[rotate.deg=90 {BLOCK}{BLOCK}　　　{BLOCK}{BLOCK}]]]]`
+        `$[position.x={50 + 0 - (pl.pos.x % 100)},y=6 $[scale.x=5,y=1.25 $[scale.x=5,y=0.3 {FLOOR}]]]$[position.x={50 + -2.0 - ((pl.pos.x + 50) % 100)},y=6 $[scale.x=5,y=1.25 $[scale.x=5,y=0.3 {FLOOR}]]]`
+        `$[position.x=0,y=15 $[scale.x=5.0,y=3.0 $[scale.x=5.0,y=5.0 $[bg.color={UI_COLOR} 　　　]]]]`
+        `$[position.x=0,y={pl.pos.y} $[rotate.deg={pl.deg} $[scale.x=1,y=1 {pl.sprite}]]]`
+      ].join(Str:lf)
+    })
+
+    // スコア表示用データ
+    Ui:get("scoreMfm").update({
+      text: [
+        `$[position.y=2.5 $[scale.x=1.5,y=1.5 $[bg.color=8888 {padStart(level, 5, "0")}]]]`
+      ].join(Str:lf)
+    })
+
+    // エフェクト表示用データ
+    Ui:get("effectMfm").update({
+      text: [
+        `$[scale.x=0,y=0 {EFFECT}]`
+      ].join(Str:lf)
+    })
+
+    // 開始ボタンに表示用データ
+    // ジャンプボタンを流用
+    Ui:get("jumpButton").update({
+      text: "　　　　クリックして開始　　　　"
+      onClick: @() {
+        ready()
+      }
+      primary: true
+    })
+
+    Ui:hidden(ui_area_name, false)
+  }
+  // 待機
+  @ready() {
+    // ジャンプボタンに戻す
+    Ui:get("jumpButton").update({
+      text: "　　　　　　ジャンプ　　　　　　"
+      onClick: @() {
+        pl.d.y = -0.5
+      }
+      primary: true
+    })
+
+    update()
+  }
+  // 更新処理
+  @update() {
+    level = (pl.pos.x - (pl.pos.x % 15)) / 15
+
+    pl.pos.x = pl.pos.x + pl.d.x
+    pl.pos.y = pl.pos.y + pl.d.y
+    pl.d.x = 0.37 + (level - (level % 10)) * 0.003
+    pl.d.y = pl.d.y + 0.05
+    pl.deg = pl.deg / 2 + (pl.d.y / Math:sqrt(pl.d.y * pl.d.y + pl.d.x * pl.d.x) * 90) / 2
+
+    for (let i = 0, 3) {
+      if ((blocks[i].x - pl.pos.x) < -20) {
+        blocks[i] = {
+          x: blocks[i].x + 45,
+          y: Math:rnd(-3, -12),
+          r: 2 + (8 / (level + 40))
+        }
+      }
+    }
+
+    // 表示用データ
+    Ui:get("gameMfm").update({
+      text: [
+        `$[position.x={blocks[0].x - pl.pos.x},y={blocks[0].y + (2.0 * 5) - (0 * 2.5)} $[scale.x=1.25,y=1.25 $[scale.x=1.5,y={blocks[0].r} $[rotate.deg=90 {BLOCK}{BLOCK}　　　{BLOCK}{BLOCK}]]]]`
+        `$[position.x={blocks[1].x - pl.pos.x},y={blocks[1].y + (2.0 * 5) - (1 * 2.5)} $[scale.x=1.25,y=1.25 $[scale.x=1.5,y={blocks[1].r} $[rotate.deg=90 {BLOCK}{BLOCK}　　　{BLOCK}{BLOCK}]]]]`
+        `$[position.x={blocks[2].x - pl.pos.x},y={blocks[2].y + (2.0 * 5) - (2 * 2.5)} $[scale.x=1.25,y=1.25 $[scale.x=1.5,y={blocks[2].r} $[rotate.deg=90 {BLOCK}{BLOCK}　　　{BLOCK}{BLOCK}]]]]`
+        `$[position.x={50 + 0 - (pl.pos.x % 100)},y=6 $[scale.x=5,y=1.25 $[scale.x=5,y=0.3 {FLOOR}]]]$[position.x={50 + -2.0 - ((pl.pos.x + 50) % 100)},y=6 $[scale.x=5,y=1.25 $[scale.x=5,y=0.3 {FLOOR}]]]`
+        `$[position.x=0,y=15 $[scale.x=5.0,y=3.0 $[scale.x=5.0,y=5.0 $[bg.color={UI_COLOR} 　　　]]]]`
+        `$[position.x=0,y={pl.pos.y} $[rotate.deg={pl.deg} $[scale.x=1,y=1 {pl.sprite}]]]`
+      ].join(Str:lf)
+    })
+
+    if (pre_level == level) {
+    } else {
+      Ui:get("scoreMfm").update({
+        text: [
+          `$[position.y=2.5 $[scale.x=1.5,y=1.5 $[bg.color=8888 {padStart(level, 5, "0")}]]]`
+        ].join(Str:lf)
+      })
+      pre_level = level
+    }
+
+    new_time = Date:now()
+
+    if (pl.pos.y > 2.0) {
+      gameover()
+    } else {
+      for (let i = 0, 3) {
+        if (((blocks[i].x - pl.pos.x) < 2.2) && (((blocks[i].x - pl.pos.x) > -2.2))) {
+          if (((blocks[i].y - pl.pos.y) > (blocks[i].r + 1.0)) || ((blocks[i].y - pl.pos.y) < (0 - (blocks[i].r + 2.0)))) {
+            gameover()
+            return 0
+          }
+        }
+      }
+      Async:timeout(1000 / FPS - (new_time - old_time), @() {
+        update()
+      })
+    }
+    old_time = new_time
+  }
+  // ゲームオーバー
+  @gameover() {
+    Async:timeout(800, @() {
+      let level_array = save_data.map(@(v) {
+        Obj:get(v, "level")
+      })
+
+      var index = -1
+      for (let i = 0, level_array.len) {
+        if (level_array[i] < level) {
+          index = (i + 1)
+          break
+        }
+      }
+
+      if (index != -1) {
+        Mk:dialog("ランクイン", [
+          `歴代{index}位`
+          `{level}点`
+          `$[x2 :omew: :mimichan_sakanano:]`
+        ].join(Str:lf))
+      } 
+      saveData()
+      result()
+    })
+
+    let effectPosY = eval {
+      if (pl.pos.y < -8) {
+        (pl.pos.y - 2)
+      }
+      else {
+        (pl.pos.y - 8)
+      }
+    }
+    let effect = EFFECTS[random(0, (EFFECTS.len - 1))]
+    Ui:get("effectMfm").update({
+      text: [
+        `$[position.y={effectPosY} $[scale.x=2,y=2 {effect}]]`
+      ].join(Str:lf)
+    })
+  }
+
+  // リザルト
+  @result() {
+    Ui:get("effectMfm").update({
+      text: [
+        `$[scale.x=0,y=0 {EFFECT}]`
+      ].join(Str:lf)
+    })
+    Ui:get("jumpButton").update({
+      text: "　　　　　　リトライ　　　　　　"
+      onClick: @() {
+        Ui:hidden("post_area", true)
+        init()
+      }
+      primary: false
+    })
+    let postText = [
+      `<center>`
+//      PLAY_NAME
+      `$[position.y=0.7 $[blur $[rainbow.speed=3s $[fg.color=fff436 **{PLAY_NAME}**]]]]`
+      `$[position.y=-0.7 $[fg.color=89e555 **{PLAY_NAME}**]]`
+      `$[x2 {pl.sprite} {level}点 {pl.sprite}]`
+      TAG_NAME
+      PLAY_URL
+      `</center>`
+    ].join(Str:lf)
+
+    Ui:get("postFormButton").update({
+      text: "　　　　　　投稿する　　　　　　"
+      form:  {
+        text: postText
+      }
+      primary: true
+      rounded: true
+    })
+
+    // 共有ボタン風リンクUI更新
+    Ui:get("shareMfm").update({
+      text: [
+        `$[border.radius=20 $[bg.color=fff $[scale.x=0.8,y=0.8 `
+        `**[別サーバーで共有する](https://misskey-hub.net/share?text={encodeURIComponent(postText)})**]]]`
+      ].join()
+      size: 1.25
+    })
+
+    Ui:get("chacterselectButton").update({
+      text: "　　　　キャラクター変更　　　　"
+      onClick: @() {
+        Ui:hidden(ui_area_name, true)
+        Ui:hidden("post_area", true)
+        gameCharacterSelect()
+      }
+    })
+    Ui:get("returnTitleButton").update({
+      text: "　　　　　　タイトル　　　　　　"
+      onClick: @() {
+        Ui:hidden(ui_area_name, true)
+        Ui:hidden("post_area", true)
+        gameTitle()
+      }
+    })
+    Ui:hidden("post_area", false)
+  }
+
+  init()
+}
+
+// 0埋め
+// param: num<num>
+// param: target_len<num>
+// param: pad_str<str>
+// return: <str>
+@padStart(num, target_len, pad_str) {
+  var str = num.to_str()
+  let digit = (target_len - str.len)
+  
+  for digit {
+    str = `{pad_str}{str}`
+  }
+  return str
+}
+
+// セーブ
+@saveData() {
+  var date = Date:now()
+  save_data.push({
+    sprite: pl.sprite,
+    level: level,
+    date: [
+      `{padStart(Date:year(date), 4, "0")}/`
+      `{padStart(Date:month(date), 2, "0")}/`
+      `{padStart(Date:day(date), 2, "0")} `
+      `{padStart(Date:hour(date), 2, "0")}:`
+      `{padStart(Date:minute(date), 2, "0")}:`
+      `{padStart(Date:second(date), 2, "0")}`
+    ].join()
+  })
+  let data = save_data.sort(@(a, b) {
+    (b.level - a.level)
+  })
+  data.pop()
+  Mk:save(MK_DATA_LABEL, data)
+}
+
+// ランキングデータの初期化
+@resetRankingData() {
+  save_data = []
+  for (let i = 0, 10) {
+    var date = Date:now()
+    save_data.push({
+      sprite: ":icon_kitazawamisuki:",
+      level: (i + 1) * 5,
+      date: [
+      `{padStart(Date:year(date), 4, "0")}/`
+      `{padStart(Date:month(date), 2, "0")}/`
+      `{padStart(Date:day(date), 2, "0")} `
+      `{padStart(Date:hour(date), 2, "0")}:`
+      `{padStart(Date:minute(date), 2, "0")}:`
+      `{padStart(Date:second(date), 2, "0")}`
+      ].join()
+    })
+  }
+  Mk:save(MK_DATA_LABEL, save_data.sort(@(a, b) {
+    (b.level - a.level)
+  }))
+}
+
+// UIを表示
+Ui:render([
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: "$[x2 $[bounce Now Loading...]]"
+      }, "initializeMfm")
+    ]
+    align: "center"
+    hidden: false
+  }, "initialize_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "titleMfm"),
+      Ui:C:button({}, "startButton"),
+      Ui:C:button({}, "rankingButton"),
+      Ui:C:button({}, "optionButton")
+    ]
+    align: "center"
+    hidden: true
+  }, "title_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "characterselectMfm"),
+      Ui:C:mfm({}, "characterselectMsgMfm"),
+      Ui:C:buttons({}, "characterselectButtons"),
+      Ui:C:button({}, "characterselectReturnButton")
+      Ui:C:container({
+        children: [
+          Ui:C:folder({
+            children: [
+              Ui:C:select({}, "emojicategorySelect")
+              Ui:C:select({}, "emojinameSelect")
+              Ui:C:mfm({}, "emojinameMfm")
+              Ui:C:button({}, "emojiselectconfirmButton")
+            ]
+          }, "characterselectFolder")
+        ]
+        align: "center"
+        hidden: false
+      }, "characterselect_sub_area")
+    ]
+    align: "center"
+    hidden: true
+  }, "characterselect_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "rankingMfm")
+      Ui:C:mfm({}, "rankingMsgMfm")
+      Ui:C:button({}, "rankingReturnButton")
+    ]
+    align: "center"
+    hidden: true
+  }, "ranking_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "optionMfm"),
+      Ui:C:mfm({}, "optionMsgMfm"),
+//      Ui:C:button({}, "optionHoge00Button"),
+      Ui:C:button({}, "optionHoge01Button"),
+      Ui:C:button({}, "optionResetRankingButton"),
+      Ui:C:button({}, "optionReturnButton")
+    ]
+    align: "center"
+    hidden: true
+  }, "option_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "gameMfm"),
+      Ui:C:mfm({}, "scoreMfm"),
+      Ui:C:mfm({}, "effectMfm"),
+      Ui:C:button({}, "jumpButton")
+    ]
+    align: "center"
+    hidden: true
+  }, "game_area")
+  Ui:C:container({
+    children: [
+      Ui:C:postFormButton({}, "postFormButton")
+      Ui:C:mfm({}, "shareMfm")
+      Ui:C:button({}, "chacterselectButton")
+      Ui:C:button({}, "returnTitleButton")
+    ]
+    align: "center"
+    hidden: true
+  }, "post_area")
+])
+gameInitialize()

@@ -67,14 +67,14 @@ Copyright (c) 2024 elysion
 
 ### misskey.stream
 デイリー
-- [今日のカスタム絵文字](./page/kitazawa/9te15jf7fe.md)
-- [今日のスパチャ](./page/kitazawa/9uis0l3gd12305xp.md)
-- [今日のStreamカード](./page/kitazawa/9wpztwa2xtf10ca7.md)
+- [今日のカスタム絵文字](./page/stream/9te15jf7fe.md)
+- [今日のスパチャ](./page/stream/9uis0l3gd12305xp.md)
+- [今日のStreamカード](./page/stream/9wpztwa2xtf10ca7.md)
 
 それ以外
-- [Streamスロット](./page/kitazawa/9te0mbzqf3.md)
-- [Streamスロット(難)](./page/kitazawa/9uuq0pqprccq00tn.md)
-- [俺のｱﾂｱﾂの😚❤️KISS](./page/kitazawa/9ui0o7j7d12304zk.md)
-- [Stream俳句](./page/kitazawa/9uih9xbnd12305qd.md)
-- [気まぐれカスタム絵文字](./page/kitazawa/9uipd6yld12305wz.md)
-- [Streamカード](./page/kitazawa/9wpztb1yxtf10ca6.md)
+- [Streamスロット](./page/stream/9te0mbzqf3.md)
+- [Streamスロット(難)](./page/stream/9uuq0pqprccq00tn.md)
+- [俺のｱﾂｱﾂの😚❤️KISS](./page/stream/9ui0o7j7d12304zk.md)
+- [Stream俳句](./page/stream/9uih9xbnd12305qd.md)
+- [気まぐれカスタム絵文字](./page/stream/9uipd6yld12305wz.md)
+- [Streamカード](./page/stream/9wpztb1yxtf10ca6.md)

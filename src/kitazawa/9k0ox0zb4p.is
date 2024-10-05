@@ -2,8 +2,8 @@
 // きたざわシャツ
 // 参考: Preset -> Shuffle
 // Copyright (c) 2024 @elysion
-// License: MIT License
-// https://github.com/elysion-pre/MisskeyPlay/blob/main/LICENSE
+// Released under the MIT license
+// https://opensource.org/licenses/mit-license.php
 
 let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9jwc5kdl75`
 let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL

@@ -15,9 +15,9 @@ Copyright (c) 2024 elysion
 
 ### submarin.online
 デイリー
-- [今日のカスタム絵文字](./page/submarin/fugafuga.md)
-- [今日のスパチャ](./page/submarin/fugafuga.md)
-- [今日のさんまぶりカード](./page/submarin/fugafuga.md)
+- [今日のカスタム絵文字](./page/submarin/9scqjq2uzb.md)
+- [今日のスパチャ](./page/submarin/9sd295l9gv.md)
+- [今日のさんまぶりカード](./page/submarin/9wpzs3gwig.md)
 
 それ以外
 - [さんまぶりスロット](./page/submarin/9scg0eomec.md)

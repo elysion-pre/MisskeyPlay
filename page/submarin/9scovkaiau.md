@@ -18,7 +18,7 @@ https://submarin.online/play/9scovkaiau
 
 ## ソース
 
-[9scovkaiau.is](./../src/submarin/9scovkaiau.is)
+[9scovkaiau.is](./../../src/submarin/9scovkaiau.is)
 
 ----
 

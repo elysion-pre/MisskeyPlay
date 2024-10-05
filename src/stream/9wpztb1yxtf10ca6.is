@@ -1,0 +1,433 @@
+/// @ 0.19.0
+// カード
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let PLAY_NAME = eval {
+  match SERVER_URL {
+    "https://submarin.online" => { "さんまぶりカード" }
+    "https://msk.kitazawa.me" => { "きたざわカード" }
+    "https://misskey.stream" => { "STREAMカード" }
+    * => { `{SERVER_URL}カード` }
+  }
+}
+let PLAY_TAG =  eval {
+  match SERVER_URL {
+    "https://submarin.online" => { "#SUBMARIN_CARD" }
+    "https://msk.kitazawa.me" => { "#KITAZAWA_CARD" }
+    "https://misskey.stream" => { "#STREAM_CARD" }
+    * => ""
+  }
+}
+let PLAY_URL = eval {
+  if exists THIS_URL THIS_URL
+  else {
+    match SERVER_URL {
+      "https://submarin.online" => { `{SERVER_URL}/play/` }
+      "https://msk.kitazawa.me" => { `{SERVER_URL}/play/9quc8vp8ry` }
+      "https://misskey.stream" => { `{SERVER_URL}/play/` }
+      * => ""
+    }
+  }
+}
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_NAME
+
+let random = eval {
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+let CARD_GAME_NAME = eval {
+  match SERVER_URL {
+    "https://submarin.online" => { "Submarin card game." }
+    "https://msk.kitazawa.me" => { "Kitazawa card gemu." }
+    "https://misskey.stream" => { "Stream card game" }
+    * => { `{SERVER_URL} card game.` }
+  }
+}
+
+let CARD_COLOR = [
+// 全体, 名前枠, 名前, 説明
+  [ "b38c57", "c4a884", "000000", "e1cfbb" ],  // 通常モンスター
+  [ "aa6044", "daaa93", "000000", "e2bea7" ],  // 効果モンスター
+  [ "4678b7", "5479b9", "000000", "7c9cd0" ],  // 儀式モンスター
+  [ "723c9d", "6f3c7a", "000000", "bfb2d4" ],  // 融合モンスター
+  [ "d4d4d4", "d2d1d2", "000000", "dcdcdc" ],  // シンクロモンスター
+  [ "091a42", "303159", "ffffff", "fdf8fd" ],  // エクシーズモンスター
+  [ "0063b8", "6089c3", "ffffff", "b0c8ea" ],  // リンクモンスター
+  [ "968389", "e3ccd4", "000000", "dfd3d3" ],  // トークン
+//  [ "0b7a67", "6c9884", "ffffff", "82a69a" ],  // 魔法
+//  [ "8d0a6e", "c060ab", "ffffff", "ca92ad" ],  // 罠
+]
+
+// 除外する絵文字のカテゴリ
+// pagesのjsonデータ読み込み
+// https://{SERVER_URL}/@elysion/pages/ignore_emoji_data
+let IGNORE_EMOJI_LIST = eval {
+  var data = null
+  let pages_data = Mk:api("pages/show", {
+    name: "ignore_emoji_data"
+    username: "elysion"
+  })
+  if (Core:type(pages_data) == "error") {
+    data = { category: [ null ] }
+  } else {
+    data = Json:parse(pages_data.content[0].text)
+  }
+  data
+}
+
+@EmojiManager() {
+  let this = {
+    obj: {}
+    categories: []
+    // コンストラクタ
+    constructor: @() {
+      // 除外カテゴリ以外の絵文字抽出
+      this.obj = CUSTOM_EMOJIS.filter(@(emoji) {
+        !IGNORE_EMOJI_LIST.category.incl(emoji.category)
+      })
+      // カテゴリー抽出
+      var prev_category = ""
+      for (let i = 0, (this.obj.len - 1)) {
+        if (prev_category != this.obj[i].category) {
+          this.categories.push(this.obj[i].category)
+        }
+        prev_category = this.obj[i].category
+      }
+      this
+    }
+    // 絵文字カテゴリを返す
+    // return: <arr>
+    getCategories: @() {
+      this.categories
+    }
+    // 絵文字を返す
+    // param: name<str>
+    // return: <arr>
+    getEmoji: @(name) {
+      this.obj.filter(@(v) {
+        (v.name == name)
+      }).pop()
+    }
+    // ランダムな絵文字を返す
+    // return: <obj>
+    getRandomEmoji: @() {
+      this.obj[random(0, (this.obj.len - 1))]
+    }
+    // カテゴリー内の絵文字を返す
+    // param: category<str>
+    // return: <arr>
+    getCategoryEmojis: @(category) {
+      this.obj.filter(@(emoji) {
+        emoji.category == category
+      })
+    }
+    // 絵文字のエイリアスを返す
+    // param: emoji<obj>
+    // return: <arr>
+    getEmojiAliases: @(emoji) {
+      var aliases = []
+      // 絵文字追加直後はaliasesに何も入っていない場合がある
+      if (emoji["aliases"].len > 0) {
+        // ""の場合
+        if (emoji["aliases"][0] == "") {
+          // emoji.nameを返す
+          aliases.push(emoji["name"])
+        } else {
+          // エイリアスを返す
+          aliases = emoji["aliases"]
+        }
+      } else {
+        // emoji.nameを返す
+        aliases.push(emoji["name"])
+      }
+      aliases
+    }
+    // 絵文字のエイリアスを返す(fRand = trueでランダム)
+    // param: emoji<obj>
+    // param: fRand<bool>
+    // return: <str>
+    getEmojiAliase: @(emoji, fRand) {
+      var aliase = ""
+      var aliases = this.getEmojiAliases(emoji)
+      if (fRand) {
+        // ランダムでエイリアスを返す
+        aliase = aliases[random(0, (aliases.len - 1))]
+      } else {
+        // エイリアスの先頭を返す
+        aliase = aliases[0]
+      }
+      aliase
+    }
+  }
+  this.constructor()
+}
+
+@Game() {
+  var emojiMng = null
+  var select = {
+    category: ""
+    category_emojis: ""
+    emoji: ""
+  }
+  var category_emojis_components = []
+
+  // 半角から全角(不完全)
+  // param: text<str>
+  // return: <str>
+  @hankaku_to_zenkaku(text) {
+    let hankaku_zenkaku_map = [
+      ["0", "０"], ["1", "１"], ["2", "２"], ["3", "３"], ["4", "４"], ["5", "５"], ["6", "６"], ["7", "７"], ["8", "８"], ["9", "９"],
+      ["A", "Ａ"], ["B", "Ｂ"], ["C", "Ｃ"], ["D", "Ｄ"], ["E", "Ｅ"], ["F", "Ｆ"], ["G", "Ｇ"], ["H", "Ｈ"], ["I", "Ｉ"], ["J", "Ｊ"], ["K", "Ｋ"], ["L", "Ｌ"], ["M", "Ｍ"], ["N", "Ｎ"], ["O", "Ｏ"], ["P", "Ｐ"], ["Q", "Ｑ"], ["R", "Ｒ"], ["S", "Ｓ"], ["T", "Ｔ"], ["U", "Ｕ"], ["V", "Ｖ"], ["W", "Ｗ"], ["X", "Ｘ"], ["Y", "Ｙ"], ["Z", "Ｚ"],
+      ["a", "ａ"], ["b", "ｂ"], ["c", "ｃ"], ["d", "ｄ"], ["e", "ｅ"], ["f", "ｆ"], ["g", "ｇ"], ["h", "ｈ"], ["i", "ｉ"], ["j", "ｊ"], ["k", "ｋ"], ["l", "ｌ"], ["m", "ｍ"], ["n", "ｎ"], ["o", "ｏ"], ["p", "ｐ"], ["q", "ｑ"], ["r", "ｒ"], ["s", "ｓ"], ["t", "ｔ"], ["u", "ｕ"], ["v", "ｖ"], ["w", "ｗ"], ["x", "ｘ"], ["y", "ｙ"], ["z", "ｚ"],
+      ["-", "－"], [".", "．"], [" ", "　"], ["!", "！"], ["?", "？"],
+      ["ｱ", "ア"], ["ｲ", "イ"], ["ｳ", "ウ"], ["ｴ", "エ"], ["ｵ", "オ"], ["ｶ", "カ"], ["ｷ", "キ"], ["ｸ", "ク"], ["ｹ", "ケ"], ["ｺ", "コ"], ["ｻ", "サ"], ["ｼ", "シ"], ["ｽ", "ス"], ["ｾ", "セ"], ["ｿ", "ソ"], ["ﾀ", "タ"], ["ﾁ", "チ"], ["ﾂ", "ツ"], ["ﾃ", "テ"], ["ﾄ", "ト"], ["ﾅ", "ナ"], ["ﾆ", "ニ"], ["ﾇ", "ヌ"], ["ﾈ", "ネ"], ["ﾉ", "ノ"], ["ﾊ", "ハ"], ["ﾋ", "ヒ"], ["ﾌ", "フ"], ["ﾍ", "ヘ"], ["ﾎ", "ホ"], ["ﾏ", "マ"], ["ﾐ", "ミ"], ["ﾑ", "ム"], ["ﾒ", "メ"], ["ﾓ", "モ"], ["ﾔ", "ヤ"], ["ﾕ", "ユ"], ["ﾖ", "ヨ"], ["ﾗ", "ラ"], ["ﾘ", "リ"], ["ﾙ", "ル"], ["ﾚ", "レ"], ["ﾛ", "ロ"], ["ﾜ", "ワ"], ["ｦ", "ヲ"], ["ﾝ", "ン"], ["ｧ", "ァ"], ["ｨ", "ィ"], ["ｩ", "ゥ"], ["ｪ", "ェ"], ["ｫ", "ォ"], ["ｯ", "ッ"], ["ｬ", "ャ"], ["ｭ", "ュ"], ["ｮ", "ョ"]
+    ]
+    var result = []
+    each (let t, text.to_arr()) {
+      var fFound = false
+      for (let i, hankaku_zenkaku_map.len) {
+        if (t == hankaku_zenkaku_map[i][0]) {
+          result.push(hankaku_zenkaku_map[i][1])
+          fFound = true
+          break
+        }
+      }
+      if !fFound result.push(t)
+    }
+    return result.join()
+  }
+  // 名前の長さチェック
+  // param: name<str>
+  // return: <str>
+  @checkNameLength(name) {
+    let max_lengh = 12
+    var str = name
+    if (str.len > max_lengh) str = `{name.slice(0, max_lengh)}...`
+    if (str.len < max_lengh) for (max_lengh - str.len) str = `{str}　`
+    str
+  }
+  // 初期化
+  @init() {
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `カスタム絵文字読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    emojiMng = EmojiManager()
+    
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `絵文字ボタン作成中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    // 絵文字ボタン作成
+    category_emojis_components = []
+    each (let category, emojiMng.getCategories()) {
+      let category_emojis = emojiMng.getCategoryEmojis(category).map(@(v) {
+        `$[clickable.ev={v.name} :{v.name}:]`
+      })
+      category_emojis_components.push(
+        Ui:C:container({
+          children: [
+            Ui:C:folder({
+              children: [
+                Ui:C:mfm({
+                  text: [
+                    `<small>絵文字クリックで選択</small>`
+                    category_emojis.join()
+                  ].join(Str:lf)
+                  onClickEv: @(e) {
+                    reload(e)
+                  }
+                })
+              ]
+              title: `{category}({category_emojis.len})`
+              opened: false
+            })
+          ]
+          align: "center"
+          padding: 5
+        })
+      )
+    }
+
+    // カテゴリ(ランダム)
+    let categories = emojiMng.getCategories()
+    createMark(categories[random(0, (categories.len - 1))])
+
+    main()
+  }
+  // 絵柄選定
+  // param: category<str>
+  @createMark(category) {
+    
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `カテゴリの絵文字を読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    select.category = category
+    // カテゴリ(ランダム)の絵文字を取得
+    select.category_emojis = emojiMng.getCategoryEmojis(category)
+
+    select.emoji = select.category_emojis[random(0, (select.category_emojis.len - 1))]
+  }
+  // もう一度
+  @replay() {
+    reload(emojiMng.getRandomEmoji().name)
+  }
+  // 絵文字を指定してもう一度
+  @reload(emoji) {
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `再作成中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    select.emoji = emojiMng.getEmoji(emoji)
+
+    main()
+  }
+  // メイン処理
+  @main() {
+
+    var back_color = Num:to_hex(random(0, 16777216))
+    var c = (6 - back_color.len - 1)
+    if (c != 0) for c back_color = ["0" back_color].join()
+
+    let color = CARD_COLOR[random(0, (CARD_COLOR.len - 1))]
+    let atk = random(1, 99)
+    let def = random(1, 99)
+    let star = eval {
+      let mfm = []
+      let star_num = random(1, 8)
+      for (let i = 1, 8) {
+        if (star_num >= i) {
+          mfm.push("$[border.radius=50 $[bg ⭐]]")
+        } else {
+          mfm.unshift("　")
+        }
+      }
+      mfm.join()
+    }
+
+    // 結果表示用テキスト
+    let resultMfm = [
+      `$[jump.speed=10s $[border.width=6,color=4a4c66,radius=5 $[bg.color={color[0]} `
+      `  $[border.width=4,color={color[1]},style=outset $[fg.color={color[2]} $[scale.x=0.8,y=0.8 {checkNameLength(hankaku_to_zenkaku(emojiMng.getEmojiAliase(select.emoji, true)))}]]]  `
+      `　　$[scale.x=0.8,y=0.8 {star}]`
+      `$[border.width=4,color=4a4c66,style=ridge $[bg.color={back_color} `
+      ``
+      ``
+      `　　　　$[scale.x=5.0,y=5.0 :{select.emoji.name}:]　　　　`
+      ``
+      ``
+      ``
+      `]]`
+      ``
+      `   $[border.width=3,color=ac4b26,style=outset $[bg.color={color[3]} $[fg.color=000 　　　$[scale.x=0.8,y=0.8 ATK/{atk}00]　　　`
+      `　　　$[scale.x=0.8,y=0.8 DEF/{def}00]　　　`
+      `]]]   `
+      `$[fg.color={color[2]} $[scale.x=0.6,y=0.6 <i>$[font.serif **{CARD_GAME_NAME}**]</i>]]`
+      `]]]`
+    ].join(Str:lf)
+
+    // 投稿用テキスト
+    let postText = [
+      `<center>`
+      resultMfm
+      PLAY_TAG
+      PLAY_URL
+      `</center>`
+    ].join(Str:lf)
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: resultMfm
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:button({
+            text: "もう一度"
+            onClick: @() {
+              replay()
+            }
+          })
+          Ui:C:postFormButton({
+            text: "投稿する"
+            form: {
+              text: postText
+            }
+            primary: true
+            rounded: true
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:folder({
+            children: category_emojis_components
+            title: "自分でカスタム絵文字の中から選ぶ"
+            opened: true
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  // 描画
+  // param: component<arr>
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

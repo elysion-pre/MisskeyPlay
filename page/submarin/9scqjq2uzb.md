@@ -17,7 +17,7 @@ https://submarin.online/play/9scqjq2uzb
 
 ## ソース
 
-[9scqjq2uzb.is](./../src/submarin/9scqjq2uzb.is)
+[9scqjq2uzb.is](./../../src/submarin/9scqjq2uzb.is)
 
 ----
 

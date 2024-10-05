@@ -1,8 +1,8 @@
 /// @ 0.18.0
 // あなたの戦闘力
-// Copyright (c) 2024 @elysion @nasubi
-// License: MIT License
-// https://github.com/elysion-pre/MisskeyPlay/blob/main/LICENSE
+// Copyright (c) 2024 @elysion
+// Released under the MIT license
+// https://opensource.org/licenses/mit-license.php
 
 let PLAY_NAME = "あなたの戦闘力"
 let PLAY_TAG = "#自分の戦闘力上げてけ"

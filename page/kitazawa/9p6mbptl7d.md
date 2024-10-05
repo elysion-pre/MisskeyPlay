@@ -17,7 +17,7 @@ https://msk.kitazawa.me/play/9p6mbptl7d
 
 ## ソース
 
-[9p6mbptl7d.is](./../src/kitazawa/9p6mbptl7d.is)
+[9p6mbptl7d.is](./../../src/kitazawa/9p6mbptl7d.is)
 
 ----
 

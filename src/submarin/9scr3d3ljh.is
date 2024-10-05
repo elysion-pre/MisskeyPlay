@@ -1,8 +1,8 @@
 /// @ 0.18.0
 // ｱﾂｱﾂの😚❤️KISS
 // Copyright (c) 2024 @elysion
-// License: MIT License
-// https://github.com/elysion-pre/MisskeyPlay/blob/main/LICENSE
+// Released under the MIT license
+// https://opensource.org/licenses/mit-license.php
 
 let PLAY_NAME = eval {
   match SERVER_URL {

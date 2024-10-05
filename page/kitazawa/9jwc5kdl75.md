@@ -13,7 +13,7 @@ https://msk.kitazawa.me/play/9jwc5kdl75
 
 ## ソース
 
-[9jwc5kdl75.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/kitazawa/9jwc5kdl75.is)
+[9jwc5kdl75.is](./../src/kitazawa/9jwc5kdl75.is)
 
 ----
 

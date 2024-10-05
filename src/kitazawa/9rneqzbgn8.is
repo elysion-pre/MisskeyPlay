@@ -1,0 +1,315 @@
+/// @ 0.18.0
+// ｱﾂｱﾂの😚❤️KISS
+// Copyright (c) 2024 @elysion
+// License: MIT License
+// https://github.com/elysion-pre/MisskeyPlay/blob/main/LICENSE
+
+let PLAY_NAME = "ｱﾂｱﾂの😚❤️KISS"
+let TAG_NAME = "#KITAZAWA_AI"
+let PLAY_URL = if exists THIS_URL THIS_URL else "https://msk.kitazawa.me/play/9rneqzbgn8"
+
+:: Arr {
+  // ランダムで配列の値を返す
+  // param: array<arr>
+  // return: <arr[0~(arr.len - 1)]>
+  @randomSelect(array) {
+    array[random(0, (array.len - 1))]
+  }
+  // 指定の配列を削除した配列を返す
+  // param: array<arr>
+  // param: index<num>
+  // return: <arr>
+  @splice(array, index) {
+    array.slice(0, index).concat(array.slice((index + 1), array.len))
+  }
+}
+
+:: Ui {
+  // 指定UIのhidden処理
+  // param: name<str>
+  // param: f<bool>
+  @hidden(name, f) {
+    Ui:get(name).update({
+      hidden: f
+    })
+  }
+  // 指定UIのdisabled処理
+  // param: name<str>
+  // param: f<bool>
+  @disabled(name, f) {
+    Ui:get(name).update({
+      disabled: f
+    })
+  }
+}
+
+// ユーザーデータ
+// param: id<str>
+@User(id) {
+  let this = {
+    data: null
+    // コンストラクタ
+    // param: id<str>
+    constructor: @(id) {
+      this.data = Mk:api("users/show", {
+        userId: id
+      })
+      this
+    }
+    // id取得
+    // return: id<str>
+    getId: @() {
+      this.data.id
+    }
+    // host取得
+    // return: host<str>
+    getHost: @() {
+      this.data.host
+    }
+    // 名前取得
+    // return: username<str>
+    getUsername: @() {
+      this.data.username
+    }
+    // 名前取得
+    // return: name<str>
+    getName: @() {
+      // 名前が未入力ならusername(@hoge)を返す
+      if (this.data.name == null) {
+        return this.getUsername()
+      }
+      return this.data.name
+    }
+    // メンション名取得(@username@host)
+    // return: name<str>
+    getMentionName: @() {
+      match this.getHost() {
+        null => { return `@{this.getUsername()}` }
+        * => { return `@{this.getUsername()}@{this.getHost()}` }
+      }
+    }
+    // プロフィールURL取得
+    // return: name<str>
+    getProfileURL: @() {
+      match this.getHost() {
+        null => { return `{SERVER_URL}/@{this.getUsername()}` }
+        * => { return `https://{this.getHost()}/@{this.getUsername()}` }
+      }
+    }
+    // idが自分かどうか
+    // param: id<str>
+    // return: f<bool>
+    isYourself: @(id) {
+      if (this.data.id == id) {
+        return true
+      } else {
+        return false
+      }
+    }
+  }
+  this.constructor(id)
+}
+
+@Game() {
+  var player = null
+  var input_id = if exists USER_ID USER_ID else ""
+
+  // 入力処理
+  @input() {
+    // UI更新処理
+    Ui:get("inputText").update({
+      onInput: @(text) {
+        input_id = text
+      }
+      default: input_id
+      label: "idを入力してください"
+      caption: "⚠idは本ホスト(きたざわみすき)から見たidをコピペしてください。"
+    })
+
+    Ui:get("checkButton").update({
+      text: "確認する"
+      onClick: @() {
+        let user = User(input_id)
+        if (user != null) {
+          Ui:get("titleMfm").update({
+            text: `$[x2 {user.getName()}の{PLAY_NAME}は]`
+          })
+
+          Ui:get("userInfoMfm").update({
+            text: [
+              `name: {user.getName()}`
+              `username: {user.getMentionName()}`
+            ].join(Str:lf)
+          })
+          Ui:disabled("execButton", false)
+        }
+      }
+    })
+
+    Ui:get("userInfoMfm").update({
+      text: "user data"
+    })
+
+    Ui:get("execButton").update({
+      text: "実行する"
+      onClick: @() {
+        let user = User(input_id)
+        if (user != null) {
+          player = user
+          Ui:hidden("input_area", true)
+          init()
+        } else {
+          Mk:dialog("", "error")
+        }
+      }
+    })
+    Ui:hidden("loading_area", true)
+    Ui:hidden("input_area", false)
+    Ui:hidden("main_area", true)
+    Ui:hidden("post_area", true)
+    Ui:disabled("execButton", true)
+  }
+  // もう一度
+  @replay() {
+    // 押せなくしておく
+    Ui:disabled("replayButton", true)
+    input()
+  }
+  // 初期化
+  @init() {
+    // UI更新処理
+    Ui:get("titleMfm").update({
+      text: `$[x2 {player.getName()}の{PLAY_NAME}は]`
+    })
+
+    Ui:get("replayButton").update({
+      text: "もう一度"
+      onClick: @() {
+        replay()
+      }
+      disabled: true
+    })
+
+    Ui:hidden("loading_area", false)
+    Ui:hidden("input_area", true)
+    Ui:hidden("main_area", true)
+    Ui:hidden("post_area", true)
+
+    start()
+  }
+  // 処理開始
+  @start() {
+    // api: users/get-frequently-replied-users
+    // ユーザーが頻繁にリプライを送信しているユーザーを取得します。最新の1000件のノートを対象に集計を行います。
+    // https://legacy.misskey-hub.net/docs/api/endpoints/users/get-frequently-replied-users.html
+    let replied_users = Mk:api("users/get-frequently-replied-users", {
+      userId: player.getId(),
+      limit: 11
+    })
+    let rank_emoji = [
+      "🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"
+    ]
+    var count = 0
+    let user_list = []
+    if (replied_users.len > 0) {
+      each (let ru, replied_users) {
+        if ru.user.isSuspended continue
+
+        let data = []
+        let replied_user = User(ru.user.id)
+        // 自身は除外
+        if ((!player.isYourself(replied_user.getId())) && (count < 10)) {
+          data.push(`{rank_emoji[count]}: `)
+          if (count == 0) {
+            data.push("$[jelly ")
+          }
+          data.push(`?[{replied_user.getName()}]({replied_user.getProfileURL()})`)
+          if (count == 0) {
+            data.push("]")
+          }
+          user_list.push(data.join())
+          count += 1
+        }
+      }
+      // 結果表示用テキスト
+      let resultMfm = [
+        user_list.join(Str:lf)
+      ].join(Str:lf)
+
+      // 結果表示UI更新
+      Ui:get("resultMfm").update({
+       text: resultMfm
+      })
+
+      Ui:hidden("loading_area", true)
+      Ui:hidden("main_area", false)
+      Ui:hidden("post_area", false)
+      Ui:get("replayButton").update({
+        disabled: false
+      })
+    } else {
+      // 結果表示用テキスト
+      let resultMfm = [
+        "<center>"
+        "⚠直近1000件のノート内にリプライはありませんでした。"
+        "</center>"
+      ].join(Str:lf)
+
+      // 結果表示UI更新
+      Ui:get("resultMfm").update({
+        text: resultMfm
+      })
+
+      Ui:hidden("loading_area", true)
+      Ui:hidden("main_area", false)
+      Ui:get("replayButton").update({
+        disabled: false
+      })
+    }
+  }
+  input()
+}
+
+Ui:render([
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 {PLAY_NAME}]`
+      }, "titleMfm")
+    ]
+    align: "center"
+  }, "title_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 $[bounce Now Loading...]]`
+      }, "loadingMfm")
+    ]
+    align: "center"
+  } "loading_area")
+  Ui:C:container({
+    children: [
+      Ui:C:textInput({}, "inputText")
+      Ui:C:button({}, "checkButton")
+      Ui:C:mfm({}, "userInfoMfm")
+      Ui:C:button({}, "execButton")
+    ]
+    align: "center"
+    hidden: true
+  }, "input_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "resultMfm")
+    ]
+//    align: "center"
+    hidden: true
+  }, "main_area")
+  Ui:C:container({
+    children: [
+      Ui:C:button({} "replayButton")
+    ]
+    align: "center"
+    hidden: true
+  }, "post_area")
+])
+Game()

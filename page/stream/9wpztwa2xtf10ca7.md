@@ -1,4 +1,4 @@
-# 今日STREAMカード
+# 今日Streamカード
 
 * TOC
 {:toc}

@@ -19,7 +19,7 @@ https://msk.kitazawa.me/play/9qq9t8jatx
 
 ## ソース
 
-[9qq9t8jatx.is](./../src/kitazawa/9qq9t8jatx.is)
+[9qq9t8jatx.is](./../../src/kitazawa/9qq9t8jatx.is)
 
 ----
 

@@ -1,0 +1,118 @@
+/// @ 0.18.0
+// ○ルト○ルト
+// 参考: Preset -> Shuffle
+// Copyright (c) 2024 @elysion
+// License: MIT License
+// https://github.com/elysion-pre/MisskeyPlay/blob/main/LICENSE
+
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9vudzmzjub`
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
+
+let random = eval {
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+let CHAR_KATAKANA = [
+// 清音
+  "ア", "イ", "ウ", "エ", "オ", "カ", "キ", "ク", "ケ", "コ", "サ", "シ", "ス", "セ", "ソ", "タ", "チ", "ツ", "テ", "ト", "ナ", "ニ", "ヌ", "ネ", "ノ", "ハ", "ヒ", "フ", "ヘ", "ホ", "マ", "ミ", "ム", "メ", "モ", "ヤ", "ユ", "ヨ", "ラ", "リ", "ル", "レ", "ロ", "ワ", "ヲ", 
+// 撥音
+  "ン", 
+// 濁音
+  "ガ", "ギ", "グ", "ゲ", "ゴ", "ザ", "ジ", "ズ", "ゼ", "ゾ", "ダ", "ヂ", "ヅ", "デ", "ド", "バ", "ビ", "ブ", "ベ", "ボ", 
+// 半濁音
+  "パ", "ピ", "プ", "ペ", "ポ", 
+// 開拗音
+  "キャ", "キュ", "キョ", 
+  "シャ", "シュ", "ショ", 
+  "チャ", "チュ", "チョ", 
+  "ニャ", "ニュ", "ニョ", 
+  "ヒャ", "ヒュ", "ヒョ", 
+  "ミャ", "ミュ", "ミョ", 
+  "リャ", "リュ", "リョ", 
+// 開拗音（濁音）
+  "ギャ", "ギュ", "ギョ", 
+  "ジャ", "ジュ", "ジョ", 
+  "ヂャ", "ヂュ", "ヂョ", 
+  "ビャ", "ビュ", "ビョ", 
+// 開拗音（半濁音）
+  "ピャ", "ピュ", "ピョ", 
+]
+
+@Game() {
+  var results = []
+  var cursor = 0
+
+  // 実行
+  @do() {
+    if (cursor != 0) {
+	  	results = results.slice(0, (cursor + 1))
+		  cursor = 0
+	  }
+    let result = [
+      CHAR_KATAKANA[random(0, (CHAR_KATAKANA.len - 1))]
+      CHAR_KATAKANA[random(0, (CHAR_KATAKANA.len - 1))]
+    ]
+    results.push(result)
+
+    render(result)
+  }
+  // 戻る
+  @back() {
+  	cursor = cursor + 1
+  	let result = results[results.len - (cursor + 1)]
+  	render(result)
+  }
+  // 進む
+  @forward() {
+  	cursor = cursor - 1
+  	let result = results[results.len - (cursor + 1)]
+  	render(result)
+  }
+  // 描画
+  // param: result<arr>
+  @render(result) {
+    Ui:render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: `$[tada.speed=0s **{result[0]}ルト{result[1]}ルト**]`
+          })
+          Ui:C:buttons({
+            buttons: [
+              {
+                text: "←"
+                onClick: back
+					    	disabled: !(results.len > 1 && (results.len - cursor) > 1)
+              }, {
+                text: "→"
+                onClick: forward
+					    	disabled: !(results.len > 1 && cursor > 0)
+              }, {
+                text: "引き直す"
+                onClick: do
+              }
+            ]
+          })
+          Ui:C:postFormButton({
+            text: "投稿する"
+            form: {
+              text: [
+                `$[tada.speed=0s **{result[0]}ルト{result[1]}ルト**]`
+                PLAY_URL
+              ].join(Str:lf)
+            }
+            primary: true
+            rounded: true
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  do()
+}
+Game()

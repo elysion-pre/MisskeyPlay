@@ -1,0 +1,280 @@
+/// @ 0.19.0
+// ロール
+// Copyright (c) 2024 @elysion
+// License: MIT License
+// https://github.com/elysion-pre/MisskeyPlay/blob/main/LICENSE
+
+let PLAY_NAME = eval {
+  match SERVER_URL {
+    "https://submarin.online" => { "さんまぶりロール" }
+    "https://msk.kitazawa.me" => { "きたざわロール" }
+    "https://misskey.stream" => { "STREAMロール" }
+    * => { `{SERVER_URL}カード` }
+  }
+}
+let PLAY_TAG =  eval {
+  match SERVER_URL {
+    "https://submarin.online" => { "#SUBMARIN_ROLE" }
+    "https://msk.kitazawa.me" => { "#KITAZAWA_ROLE" }
+    "https://misskey.stream" => { "#STREAM_ROLE" }
+    * => ""
+  }
+}
+let PLAY_URL = eval {
+  if exists THIS_URL THIS_URL
+  else {
+    match SERVER_URL {
+      "https://submarin.online" => { `{SERVER_URL}/play/` }
+      "https://msk.kitazawa.me" => { `{SERVER_URL}/play/9qq9t8jatx` }
+      "https://misskey.stream" => { `{SERVER_URL}/play/` }
+      * => ""
+    }
+  }
+}
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_NAME
+
+let random = eval {
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+// 除外する絵文字のカテゴリ
+// pagesのjsonデータ読み込み
+// https://{SERVER_URL}/@elysion/pages/ignore_emoji_data
+let IGNORE_EMOJI_LIST = eval {
+  var data = null
+  let pages_data = Mk:api("pages/show", {
+    name: "ignore_emoji_data"
+    username: "elysion"
+  })
+  if (Core:type(pages_data) == "error") {
+    data = { category: [ null ] }
+  } else {
+    data = Json:parse(pages_data.content[0].text)
+  }
+  data
+}
+
+@EmojiManager() {
+  let this = {
+    obj: {}
+    categories: []
+    // コンストラクタ
+    constructor: @() {
+      // 除外カテゴリ以外の絵文字抽出
+      this.obj = CUSTOM_EMOJIS.filter(@(emoji) {
+        !IGNORE_EMOJI_LIST.category.incl(emoji.category)
+      })
+      // カテゴリー抽出
+      var prev_category = ""
+      for (let i = 0, (this.obj.len - 1)) {
+        if (prev_category != this.obj[i].category) {
+          this.categories.push(this.obj[i].category)
+        }
+        prev_category = this.obj[i].category
+      }
+      this
+    }
+    // 絵文字カテゴリを返す
+    // return: <arr>
+    getCategories: @() {
+      this.categories
+    }
+    // 絵文字を返す
+    // param: name<str>
+    // return: <arr>
+    getEmoji: @(name) {
+      this.obj.filter(@(v) {
+        (v.name == name)
+      }).pop()
+    }
+    // ランダムな絵文字を返す
+    // return: <obj>
+    getRandomEmoji: @() {
+      this.obj[random(0, (this.obj.len - 1))]
+    }
+    // カテゴリー内の絵文字を返す
+    // param: category<str>
+    // return: <arr>
+    getCategoryEmojis: @(category) {
+      this.obj.filter(@(emoji) {
+        emoji.category == category
+      })
+    }
+    // 絵文字のエイリアスを返す
+    // param: emoji<obj>
+    // return: <arr>
+    getEmojiAliases: @(emoji) {
+      var aliases = []
+      // 絵文字追加直後はaliasesに何も入っていない場合がある
+      if (emoji["aliases"].len > 0) {
+        // ""の場合
+        if (emoji["aliases"][0] == "") {
+          // emoji.nameを返す
+          aliases.push(emoji["name"])
+        } else {
+          // エイリアスを返す
+          aliases = emoji["aliases"]
+        }
+      } else {
+        // emoji.nameを返す
+        aliases.push(emoji["name"])
+      }
+      aliases
+    }
+    // 絵文字のエイリアスを返す(fRand = trueでランダム)
+    // param: emoji<obj>
+    // param: fRand<bool>
+    // return: <str>
+    getEmojiAliase: @(emoji, fRand) {
+      var aliase = ""
+      var aliases = this.getEmojiAliases(emoji)
+      if (fRand) {
+        // ランダムでエイリアスを返す
+        aliase = aliases[random(0, (aliases.len - 1))]
+      } else {
+        // エイリアスの先頭を返す
+        aliase = aliases[0]
+      }
+      aliase
+    }
+  }
+  this.constructor()
+}
+
+let ROLE_TITLE02 = [
+  "",
+  "の", "が",
+  "で", "を", "と",
+  "に", "な", "し",
+  "は", "い", "き",
+  "なる", "たる", "での",
+  "ある", "へ", "から",
+  "かつ", "でも", "する",
+  "だが", "には", "まで",
+  "なぜ",
+  "風の", "好きな", "系",
+  "又は",
+  "イン", "ザ", "オブ",
+  "ＶＳ"
+]
+
+@Game() {
+  var emojiMng = null
+
+  // 半角から全角(不完全)
+  // param: text<str>
+  // return: <str>
+  @hankaku_to_zenkaku(text) {
+    let hankaku_zenkaku_map = [
+      ["0", "０"], ["1", "１"], ["2", "２"], ["3", "３"], ["4", "４"], ["5", "５"], ["6", "６"], ["7", "７"], ["8", "８"], ["9", "９"],
+      ["A", "Ａ"], ["B", "Ｂ"], ["C", "Ｃ"], ["D", "Ｄ"], ["E", "Ｅ"], ["F", "Ｆ"], ["G", "Ｇ"], ["H", "Ｈ"], ["I", "Ｉ"], ["J", "Ｊ"], ["K", "Ｋ"], ["L", "Ｌ"], ["M", "Ｍ"], ["N", "Ｎ"], ["O", "Ｏ"], ["P", "Ｐ"], ["Q", "Ｑ"], ["R", "Ｒ"], ["S", "Ｓ"], ["T", "Ｔ"], ["U", "Ｕ"], ["V", "Ｖ"], ["W", "Ｗ"], ["X", "Ｘ"], ["Y", "Ｙ"], ["Z", "Ｚ"],
+      ["a", "ａ"], ["b", "ｂ"], ["c", "ｃ"], ["d", "ｄ"], ["e", "ｅ"], ["f", "ｆ"], ["g", "ｇ"], ["h", "ｈ"], ["i", "ｉ"], ["j", "ｊ"], ["k", "ｋ"], ["l", "ｌ"], ["m", "ｍ"], ["n", "ｎ"], ["o", "ｏ"], ["p", "ｐ"], ["q", "ｑ"], ["r", "ｒ"], ["s", "ｓ"], ["t", "ｔ"], ["u", "ｕ"], ["v", "ｖ"], ["w", "ｗ"], ["x", "ｘ"], ["y", "ｙ"], ["z", "ｚ"],
+      ["-", "－"], [".", "．"], [" ", "　"], ["!", "！"], ["?", "？"],
+      ["ｱ", "ア"], ["ｲ", "イ"], ["ｳ", "ウ"], ["ｴ", "エ"], ["ｵ", "オ"], ["ｶ", "カ"], ["ｷ", "キ"], ["ｸ", "ク"], ["ｹ", "ケ"], ["ｺ", "コ"], ["ｻ", "サ"], ["ｼ", "シ"], ["ｽ", "ス"], ["ｾ", "セ"], ["ｿ", "ソ"], ["ﾀ", "タ"], ["ﾁ", "チ"], ["ﾂ", "ツ"], ["ﾃ", "テ"], ["ﾄ", "ト"], ["ﾅ", "ナ"], ["ﾆ", "ニ"], ["ﾇ", "ヌ"], ["ﾈ", "ネ"], ["ﾉ", "ノ"], ["ﾊ", "ハ"], ["ﾋ", "ヒ"], ["ﾌ", "フ"], ["ﾍ", "ヘ"], ["ﾎ", "ホ"], ["ﾏ", "マ"], ["ﾐ", "ミ"], ["ﾑ", "ム"], ["ﾒ", "メ"], ["ﾓ", "モ"], ["ﾔ", "ヤ"], ["ﾕ", "ユ"], ["ﾖ", "ヨ"], ["ﾗ", "ラ"], ["ﾘ", "リ"], ["ﾙ", "ル"], ["ﾚ", "レ"], ["ﾛ", "ロ"], ["ﾜ", "ワ"], ["ｦ", "ヲ"], ["ﾝ", "ン"], ["ｧ", "ァ"], ["ｨ", "ィ"], ["ｩ", "ゥ"], ["ｪ", "ェ"], ["ｫ", "ォ"], ["ｯ", "ッ"], ["ｬ", "ャ"], ["ｭ", "ュ"], ["ｮ", "ョ"]
+    ]
+    var result = []
+    each (let t, text.to_arr()) {
+      var fFound = false
+      for (let i, hankaku_zenkaku_map.len) {
+        if (t == hankaku_zenkaku_map[i][0]) {
+          result.push(hankaku_zenkaku_map[i][1])
+          fFound = true
+          break
+        }
+      }
+      if !fFound result.push(t)
+    }
+    return result.join()
+  }
+  // 初期化
+  @init() {
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `カスタム絵文字読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    emojiMng = EmojiManager()
+    
+    main()
+  }
+  // メイン処理
+  @main() {
+    // ロール表示用
+    let roleMfm = []
+    for 5 {
+      var border_color = Num:to_hex(random(0, 16777216))
+      var c = (6 - border_color.len - 1)
+      if (c != 0) for c border_color = ["0" border_color].join()
+      
+      let emoji01 = emojiMng.getRandomEmoji()
+      let emoji02 = emojiMng.getRandomEmoji()
+      let mfm = [
+        `$[border.width=2,radius=40,color={border_color} $[bg.color=dcdcdc $[fg.color=3c3c3c 　:{emoji01.name}: `
+        hankaku_to_zenkaku(emojiMng.getEmojiAliase(emoji01, true))
+        ROLE_TITLE02[random(0, (ROLE_TITLE02.len - 1))]
+        hankaku_to_zenkaku(emojiMng.getEmojiAliase(emoji02, true))
+        `　]]]{Str:lf}`
+      ].join()
+      roleMfm.push(mfm)
+    }
+    
+    // 結果表示用
+    let resultMfm = [
+      roleMfm.join(Str:lf)
+    ].join(Str:lf)
+
+    // 投稿用テキスト
+    let postText = [
+      `<center>`
+      resultMfm
+      PLAY_TAG
+      PLAY_URL
+      `</center>`
+    ].join(Str:lf)
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: resultMfm
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:postFormButton({
+            text: "投稿する"
+            form: {
+              text: postText
+            }
+            primary: true
+            rounded: true
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  // 描画
+  // param: component<arr>
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

@@ -18,7 +18,7 @@ https://submarin.online/play/9scg0eomec
 
 ## ソース
 
-[9scg0eomec.is](./../src/submarin/9scg0eomec.is)
+[9scg0eomec.is](./../../src/submarin/9scg0eomec.is)
 
 ----
 

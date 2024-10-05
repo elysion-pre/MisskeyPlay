@@ -1,8 +1,8 @@
 /// @ 0.18.0
 // 気まぐれカスタム絵文字
 // Copyright (c) 2024 @elysion
-// License: MIT License
-// https://github.com/elysion-pre/MisskeyPlay/blob/main/LICENSE
+// Released under the MIT license
+// https://opensource.org/licenses/mit-license.php
 
 let PLAY_NAME = "気まぐれカスタム絵文字"
 let TAG_NAME = "#RANDOM_EMOJI"

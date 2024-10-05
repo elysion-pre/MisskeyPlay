@@ -19,7 +19,7 @@ https://msk.kitazawa.me/play/9pryd9gakh
 
 ## ソース
 
-[9pryd9gakh.is](./../src/kitazawa/9pryd9gakh.is)
+[9pryd9gakh.is](./../../src/kitazawa/9pryd9gakh.is)
 
 ----
 

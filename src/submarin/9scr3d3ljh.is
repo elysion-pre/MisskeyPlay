@@ -1,0 +1,260 @@
+/// @ 0.18.0
+// ｱﾂｱﾂの😚❤️KISS
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let PLAY_NAME = eval {
+  match SERVER_URL {
+    "https://submarin.online" => { "ｱﾂｱﾂの😚❤️:kiss:" }
+    "https://msk.kitazawa.me" => { "ｱﾂｱﾂの😚❤️KISS" }
+    "https://misskey.stream" => { "ｱﾂｱﾂの😚❤️:kiss:" }
+    * => { `ｱﾂｱﾂの😚❤️KISS` }
+  }
+}
+let TAG_NAME = "#ore_no_atsu_atsu_kiss"
+let PLAY_URL = eval {
+  if exists THIS_URL THIS_URL
+  else {
+    match SERVER_URL {
+      "https://submarin.online" => { `{SERVER_URL}/play/9scr3d3ljh` }
+      "https://msk.kitazawa.me" => { `{SERVER_URL}/play/9rn1fjsb6j` }
+      "https://misskey.stream" => { `{SERVER_URL}/play/9ui0o7j7d12304zk` }
+      * => ""
+    }
+  }
+}
+
+:: Arr {
+  // ランダムで配列の値を返す
+  // param: array<arr>
+  // return: <arr[0~(arr.len - 1)]>
+  @randomSelect(array) {
+    array[random(0, (array.len - 1))]
+  }
+  // 指定の配列を削除した配列を返す
+  // param: array<arr>
+  // param: index<num>
+  // return: <arr>
+  @splice(array, index) {
+    array.slice(0, index).concat(array.slice((index + 1), array.len))
+  }
+}
+
+:: Ui {
+  // 指定UIのhidden処理
+  // param: name<str>
+  // param: f<bool>
+  @hidden(name, f) {
+    Ui:get(name).update({
+      hidden: f
+    })
+  }
+  // 指定UIのdisabled処理
+  // param: name<str>
+  // param: f<bool>
+  @disabled(name, f) {
+    Ui:get(name).update({
+      disabled: f
+    })
+  }
+}
+
+// ユーザーデータ
+// param: id<str>
+@User(id) {
+  let this = {
+    data: null
+    // コンストラクタ
+    // param: id<str>
+    constructor: @(id) {
+      this.data = Mk:api("users/show", {
+        userId: id
+      })
+      this
+    }
+    // id取得
+    // return: id<str>
+    getId: @() {
+      this.data.id
+    }
+    // host取得
+    // return: host<str>
+    getHost: @() {
+      this.data.host
+    }
+    // 名前取得
+    // return: username<str>
+    getUsername: @() {
+      this.data.username
+    }
+    // 名前取得
+    // return: name<str>
+    getName: @() {
+      // 名前が未入力ならusername(@hoge)を返す
+      if (this.data.name == null) {
+        return this.getUsername()
+      }
+      return this.data.name
+    }
+    // メンション名取得(@username@host)
+    // return: name<str>
+    getMentionName: @() {
+      match this.getHost() {
+        null => { return `@{this.getUsername()}` }
+        * => { return `@{this.getUsername()}@{this.getHost()}` }
+      }
+    }
+    // プロフィールURL取得
+    // return: name<str>
+    getProfileURL: @() {
+      match this.getHost() {
+        null => { return `{SERVER_URL}/@{this.getUsername()}` }
+        * => { return `https://{this.getHost()}/@{this.getUsername()}` }
+      }
+    }
+    // idが自分かどうか
+    // param: id<str>
+    // return: f<bool>
+    isYourself: @(id) {
+      if (this.data.id == id) {
+        return true
+      } else {
+        return false
+      }
+    }
+  }
+  this.constructor(id)
+}
+
+@Game() {
+  let player = User(USER_ID)
+
+  // メイン処理
+  @main() {
+    // api: users/get-frequently-replied-users
+    // ユーザーが頻繁にリプライを送信しているユーザーを取得します。最新の1000件のノートを対象に集計を行います。
+    // https://legacy.misskey-hub.net/docs/api/endpoints/users/get-frequently-replied-users.html
+    let replied_users = Mk:api("users/get-frequently-replied-users", {
+      userId: player.getId(),
+      limit: 11
+    })
+    let rank_emoji = [
+      "🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"
+    ]
+    var count = 0
+    let user_list = []
+    if (replied_users.len > 0) {
+      each (let ru, replied_users) {
+        if (count > 9) break
+        if (ru.user.isSuspended) continue
+//        if (ru.user.isBot) continue
+
+        let data = []
+        let replied_user = User(ru.user.id)
+        // 自身は除外
+        if ((!player.isYourself(replied_user.getId())) && (count < 10)) {
+          data.push(`{rank_emoji[count]}: `)
+          if (count == 0) {
+            data.push("$[jelly ")
+          }
+          data.push(`?[{replied_user.getName()}]({replied_user.getProfileURL()})`)
+          if (count == 0) {
+            data.push("]")
+          }
+          user_list.push(data.join())
+          count += 1
+        }
+      }
+      // 結果表示用テキスト
+      let resultMfm = [
+        user_list.join(Str:lf)
+      ].join(Str:lf)
+
+      // 結果表示UI更新
+      Ui:get("resultMfm").update({
+       text: resultMfm
+      })
+
+      // 投稿用テキスト
+      let postText = [
+        `{player.getName()}の{PLAY_NAME}は`
+        resultMfm
+        TAG_NAME
+        PLAY_URL
+      ].join(Str:lf)
+
+      // 投稿UI更新
+      Ui:get("postFormButton").update({
+        text: "投稿する"
+        form: {
+          text: postText
+        }
+        primary: true
+        rounded: true
+      })
+
+      Ui:hidden("loading_area", true)
+      Ui:hidden("main_area", false)
+      Ui:hidden("post_area", false)
+
+    } else {
+      // 結果表示用テキスト
+      let resultMfm = [
+        "<center>"
+        "⚠直近1000件のノート内にリプライはありませんでした。"
+        "</center>"
+      ].join(Str:lf)
+
+      // 結果表示UI更新
+      Ui:get("resultMfm").update({
+        text: resultMfm
+      })
+
+      Ui:hidden("loading_area", true)
+      Ui:hidden("main_area", false)
+    }
+  }
+  main()
+}
+
+Ui:render([
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 {PLAY_NAME}]`
+      }, "titleMfm")
+    ]
+    align: "center"
+  }, "title_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 $[bounce Now Loading...]]`
+      }, "loadingMfm")
+    ]
+    align: "center"
+  } "loading_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "resultMfm")
+    ]
+//    align: "center"
+    hidden: true
+  }, "main_area")
+  Ui:C:container({
+    children: [
+      Ui:C:postFormButton({}, "postFormButton")
+    ]
+    align: "center"
+    hidden: true
+  }, "post_area")
+])
+if (USER_ID != null) {
+  Game()
+} else {
+  Mk:dialog("", [
+    "ユーザーIDが見つかりませんでした"
+    "ログインしてから遊んでみてね"
+  ].join(Str:lf), "error")
+}

@@ -1,0 +1,345 @@
+/// @ 0.18.0
+// きたざわんち
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9vudzmzjub`
+let PLAY_TAG = "#KITAZAWA_HOUSE"
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
+
+let random = eval {
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+時間」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:hour()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+// 除外する絵文字のカテゴリ
+// pagesのjsonデータ読み込み
+// https://{SERVER_URL}/@elysion/pages/ignore_emoji_data
+let IGNORE_EMOJI_LIST = eval {
+  var data = null
+  let pages_data = Mk:api("pages/show", {
+    name: "ignore_emoji_data"
+    username: "elysion"
+  })
+  if (Core:type(pages_data) == "error") {
+    data = {
+      category: [
+        null
+      ]
+    }
+  } else {
+    data = Json:parse(pages_data.content[0].text)
+  }
+  data
+}
+
+@EmojiManager() {
+  let this = {
+    obj: {}
+    categories: []
+    // コンストラクタ
+    constructor: @() {
+      // 除外カテゴリ以外の絵文字抽出
+      this.obj = CUSTOM_EMOJIS.filter(@(emoji) {
+        !IGNORE_EMOJI_LIST.category.incl(emoji.category)
+      })
+      // カテゴリー抽出
+      var prev_category = ""
+      for (let i = 0, (this.obj.len - 1)) {
+        if (prev_category != this.obj[i].category) {
+          this.categories.push(this.obj[i].category)
+        }
+        prev_category = this.obj[i].category
+      }
+      this
+    }
+    // 絵文字を返す
+    // param: name<str>
+    // return: <arr>
+    getEmoji: @(name) {
+      this.obj.filter(@(v) {
+        (v.name == name)
+      }).pop()
+    }
+    // ランダムな絵文字を返す
+    // return: <obj>
+    getRandomEmoji: @() {
+      this.obj[random(0, (this.obj.len - 1))]
+    }
+    // カテゴリー内の絵文字を返す
+    // param: category<str>
+    // return: <arr>
+    getCategoryEmojis: @(category) {
+      this.obj.filter(@(emoji) {
+        emoji.category == category
+      })
+    }
+    // 絵文字のエイリアスを返す
+    // param: emoji<obj>
+    // return: <arr>
+    getEmojiAliases: @(emoji) {
+      var aliases = []
+      // 絵文字追加直後はaliasesに何も入っていない場合がある
+      if (emoji["aliases"].len > 0) {
+        // ""の場合
+        if (emoji["aliases"][0] == "") {
+          // emoji.nameを返す
+          aliases.push(emoji["name"])
+        } else {
+          // エイリアスを返す
+          aliases = emoji["aliases"]
+        }
+      } else {
+        // emoji.nameを返す
+        aliases.push(emoji["name"])
+      }
+      aliases
+    }
+    // 絵文字のエイリアスを返す(fRand = trueでランダム)
+    // param: emoji<obj>
+    // param: fRand<bool>
+    // return: <str>
+    getEmojiAliase: @(emoji, fRand) {
+      var aliase = ""
+      var aliases = this.getEmojiAliases(emoji)
+      if (fRand) {
+        // ランダムでエイリアスを返す
+        aliase = aliases[random(0, (aliases.len - 1))]
+      } else {
+        // エイリアスの先頭を返す
+        aliase = aliases[0]
+      }
+      aliase
+    }
+  }
+  this.constructor()
+}
+
+// 時計[0分,30分]
+let CLOCK_EMOJIS = [
+  ["🕛", "🕧"],
+  ["🕐", "🕜"],
+  ["🕑", "🕝"],
+  ["🕒", "🕞"],
+  ["🕓", "🕟"],
+  ["🕔", "🕠"],
+  ["🕕", "🕡"],
+  ["🕖", "🕢"],
+  ["🕗", "🕣"],
+  ["🕘", "🕤"],
+  ["🕙", "🕥"],
+  ["🕚", "🕦"]
+]
+
+@Game() {
+  var emojiMng = null
+
+  // 初期化
+  @init() {
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `カスタム絵文字読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    emojiMng = EmojiManager()
+
+    main()
+  }
+  // 時計(30分毎)
+  // param: colors<arr>
+  @getClock() {
+    var clock = ""
+    if (Date:minute() >= 30) {
+      clock = CLOCK_EMOJIS[(Date:hour() % 12)][1]
+    } else {
+      clock = CLOCK_EMOJIS[(Date:hour() % 12)][0]
+    } 
+    clock
+  }
+  // 窓から見える空の色取得(3時間おき)
+  // param: colors<arr>
+  // [基本色, 濃淡色]
+  @getSkyColors() {
+    var colors = ""
+    match true {
+      // 漆黒
+      (Date:hour() >= 0 && 3 > Date:hour()) => {
+        colors = [ "000030", "000000" ]
+      }
+      // 褐返
+      (Date:hour() >= 3 && 6 > Date:hour()) => {
+        colors = [ "203744", "0E191F" ]
+      }
+      // 白藍
+      (Date:hour() >= 6 && 9 > Date:hour()) => {
+        colors = [ "C1E4E9", "74C2CC" ]
+      }
+      // 空色
+      (Date:hour() >= 9 && 12 > Date:hour()) => {
+        colors = [ "A0D8EF", "47B4DF" ]
+      }
+      // 空色
+      (Date:hour() >= 12 && 15 > Date:hour()) => {
+        colors = [ "87CEEB", "2DAADB" ]
+      }
+      // 紅掛空色
+      (Date:hour() >= 15 && 18 > Date:hour()) => {
+        colors = [ "8491C3", "4A5A96" ]
+      }
+      // 濃藍
+      (Date:hour() >= 18 && 21 > Date:hour()) => {
+        colors = [ "0F2350", "060F22" ]
+      }
+      // 鉄紺
+      (Date:hour() >= 21 && 24 > Date:hour()) => {
+        colors = [ "17184B", "0A0B23" ]
+      }
+    }
+    colors
+  }
+  // メイン処理
+  @main() {
+    // テレビ用
+    let mojis = emojiMng.getCategoryEmojis("moji").map(@(v) {
+      `:{v.name}:`
+    })
+    let moji = eval {
+      mojis[random(0, (mojis.len - 1))]
+    }
+
+    // みみちゃん
+    let mimichans = emojiMng.getCategoryEmojis("のんびりぷらいす").filter(@(v) {
+      v.name.incl("mimi_")
+    }).map(@(v) {
+      `:{v.name}:`
+    })
+// 1%でレインボーみみちゃん
+    let mimichan = eval {
+      if (random(0, 100) == 100) {
+        `$[rainbow :mimi_niji:]`
+      } else {
+        mimichans[random(0, (mimichans.len - 1))]
+      }
+    }
+
+    // 窓にいるナニカ
+    let enemys = [
+      // icon
+      "mantou", "pamu_icon", "robo1501",
+      // pic
+      "child_izumoto", "endoukenichi", "kenkoba", "kenkoba_", "marucchi", "tamori", "tamori_",
+      // tama
+      "kusa_chinge", "moguchin", "oyasumi_chinge",
+      // のんびりぷらいす
+      "yuzuriha",
+      // 素材
+      "nibimimi_1",
+      // msk.seppuku.club
+      "marin",
+      // team.matechan.com
+      "hisubway_chibi", "matechan_chibi"
+    ].map(@(v) {
+      `:{v}:`
+    })
+// 出現確率5%
+    let enemy = eval {
+      if (random(0, 100) >= 95) {
+        enemys[random(0, (enemys.len - 1))]
+      } else {
+        ":tp:"
+      }
+    }
+
+    // トモダチ
+    let friend_categories = [
+      "icon",
+      "pic",
+      "tama",
+      "さかなの",
+      "パム",
+      "絵",
+      "都道府県 いらすとや"
+    ]
+    var friends = []
+    each (let c, friend_categories) {
+      friends = friends.concat(emojiMng.getCategoryEmojis(c))
+    }
+// 出現確率50%
+    let friend = eval {
+      if (random(0, 100) >= 50) {
+        friends[random(0, (friends.len - 1))]
+      } else {
+        emojiMng.getEmoji("tp")
+      }
+    }
+    // 空の色
+    let sky_colors = getSkyColors()
+
+    // 結果表示用
+    let resultMfm = [
+      `$[position.x=-1,y=4 $[scale.x=4,y=2 $[scale.x=1.5,y=2  $[border.width=4,style=inset,color=c3bcab $[bg.color=aa9971 :tp:]]]]]`
+      `$[position.x=2,y=0 $[scale.x=2,y=2 {getClock()}]]$[position  $[position.x=5 $[border.color=D89E83,width=2,style=inset $[position $[scale $[rotate $[bg.color={sky_colors[0]} :tp:]]]]]]$[position.x=5 $[bg.color={sky_colors[0]} $[border.color=D89E83,width=2,style=inset $[position.x=1,y=1 $[scale.x=1.5,y=1.5 $[rotate.deg=45 $[bg.color={sky_colors[1]} :tp:]]]]]]]$[position.x=0.4,y=2.3 $[bg.color={sky_colors[0]} $[border.color=D89E83,width=2,style=inset $[position.x=1,y=1 $[scale.x=1.5,y=1.5 $[rotate.deg=45 $[bg.color={sky_colors[1]} :tp:]]]]]]]$[position.x=0.4,y=2.3 $[border.color=D89E83,width=2,style=inset $[position $[scale $[rotate.deg=0 $[bg.color={sky_colors[1]} :tp:]]]]]]]$[position.x=-1.575,y=2.25 $[scale.x=1.2,y=1.2 <small>{enemy}</small>]]`
+      `$[position.x=-2.6,y=2 $[scale.x=3,y=3 📺]]$[position.x=-4.2,y=2.2 $[scale.x=0.9,y=0.9 $[rainbow.speed=10s {moji}]]]`
+      `$[position.x=2,y=1 $[scale.x=1.5,y=1.5 :{friend.name}:]]$[position.x=3,y=1 $[scale.x=1.5,y=1.5 {mimichan}]]`
+      `:tp:`
+    ].join(Str:lf)
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `<center>`
+              resultMfm
+              `</center>`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:postFormButton({
+            text: "投稿する"
+            form: {
+              text: [
+                `<center>`
+                resultMfm
+                PLAY_URL
+                PLAY_TAG
+                `</center>`
+              ].join(Str:lf)
+            }
+            primary: true
+            rounded: true
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  // 描画
+  // param: components<arr>
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+
+Game()

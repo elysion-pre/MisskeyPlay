@@ -1,0 +1,1047 @@
+/// @ 0.19.0
+// ポーカー
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let PLAY_NAME = eval {
+  match SERVER_URL {
+    "https://submarin.online" => { "さんまぶりポーカー" }
+    "https://msk.kitazawa.me" => { "きたざわポーカー" }
+    "https://misskey.stream" => { "Streamポーカー" }
+    * => { `{SERVER_URL}ポーカー` }
+  }
+}
+let PLAY_TAG =  eval {
+  match SERVER_URL {
+    "https://submarin.online" => { "#SUBMARIN_POKER" }
+    "https://msk.kitazawa.me" => { "#KITAZAWA_POKER" }
+    "https://misskey.stream" => { "#STREAM_POKER" }
+    * => ""
+  }
+}
+let PLAY_URL = eval {
+  if exists THIS_URL THIS_URL
+  else {
+    match SERVER_URL {
+      "https://submarin.online" => { `{SERVER_URL}/play/` }
+      "https://msk.kitazawa.me" => { `{SERVER_URL}/play/9q0vlqrb4u` }
+      "https://misskey.stream" => { `{SERVER_URL}/play/` }
+      * => ""
+    }
+  }
+}
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_NAME
+
+let random = eval {
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+let POKER_LOGO =  eval {
+  match SERVER_URL {
+    "https://submarin.online" => { `$[fg.color=ff0000 S]$[fg.color=ff7700 U]$[fg.color=ffea00 B]$[fg.color=9dff00 M]$[fg.color=26ff00 A]$[fg.color=00ff4d R]$[fg.color=00ffc4 I]$[fg.color=00c4ff N]$[fg.color=004dff  ]$[fg.color=2600ff P]$[fg.color=9d00ff O]$[fg.color=ff00ea K]$[fg.color=ff0077 E]$[fg.color=ff0000 R]` }
+    "https://msk.kitazawa.me" => { `$[fg.color=ff0000 K]$[fg.color=ff8000 I]$[fg.color=ffff00 T]$[fg.color=80ff00 A]$[fg.color=00ff00 Z]$[fg.color=00ff80 A]$[fg.color=00ffff W]$[fg.color=0080ff A] $[fg.color=0000ff P]$[fg.color=8000ff O]$[fg.color=ff00ff K]$[fg.color=ff0080 E]$[fg.color=ff0000 R]` }
+    "https://misskey.stream" => { `$[fg.color=ff0000 S]$[fg.color=ff8c00 T]$[fg.color=eaff00 R]$[fg.color=5eff00 E]$[fg.color=00ff2f A]$[fg.color=00ffbb M]$[fg.color=00bbff  ]$[fg.color=002fff P]$[fg.color=5e00ff O]$[fg.color=ea00ff K]$[fg.color=ff008c E]$[fg.color=ff0000 R]` }
+    * => `$[fg.color=ff0000 H]$[fg.color=ff7700 O]$[fg.color=ffea00 G]$[fg.color=9dff00 E]$[fg.color=26ff00 H]$[fg.color=00ff4d O]$[fg.color=00ffc4 G]$[fg.color=00c4ff E]$[fg.color=004dff  ]$[fg.color=2600ff P]$[fg.color=9d00ff O]$[fg.color=ff00ea K]$[fg.color=ff0077 E]$[fg.color=ff0000 R]`
+  }
+}
+
+// 除外する絵文字のカテゴリ
+// pagesのjsonデータ読み込み
+// https://{SERVER_URL}/@elysion/pages/ignore_emoji_data
+let IGNORE_EMOJI_LIST = eval {
+  var data = null
+  let pages_data = Mk:api("pages/show", {
+    name: "ignore_emoji_data"
+    username: "elysion"
+  })
+  if (Core:type(pages_data) == "error") {
+    data = { category: [ null ] }
+  } else {
+    data = Json:parse(pages_data.content[0].text)
+  }
+  data
+}
+
+@EmojiManager() {
+  let this = {
+    obj: {}
+    categories: []
+    // コンストラクタ
+    constructor: @() {
+      // 除外カテゴリ以外の絵文字抽出
+      this.obj = CUSTOM_EMOJIS.filter(@(emoji) {
+        !IGNORE_EMOJI_LIST.category.incl(emoji.category)
+      })
+      // カテゴリー抽出
+      var prev_category = ""
+      for (let i = 0, (this.obj.len - 1)) {
+        if (prev_category != this.obj[i].category) {
+          this.categories.push(this.obj[i].category)
+        }
+        prev_category = this.obj[i].category
+      }
+      this
+    }
+    // 絵文字カテゴリを返す
+    // return: <arr>
+    getCategories: @() {
+      this.categories
+    }
+    // 絵文字を返す
+    // param: name<str>
+    // return: <arr>
+    getEmoji: @(name) {
+      this.obj.filter(@(v) {
+        (v.name == name)
+      }).pop()
+    }
+    // ランダムな絵文字を返す
+    // return: <obj>
+    getRandomEmoji: @() {
+      this.obj[random(0, (this.obj.len - 1))]
+    }
+    // カテゴリー内の絵文字を返す
+    // param: category<str>
+    // return: <arr>
+    getCategoryEmojis: @(category) {
+      this.obj.filter(@(emoji) {
+        emoji.category == category
+      })
+    }
+    // 絵文字のエイリアスを返す
+    // param: emoji<obj>
+    // return: <arr>
+    getEmojiAliases: @(emoji) {
+      var aliases = []
+      // 絵文字追加直後はaliasesに何も入っていない場合がある
+      if (emoji["aliases"].len > 0) {
+        // ""の場合
+        if (emoji["aliases"][0] == "") {
+          // emoji.nameを返す
+          aliases.push(emoji["name"])
+        } else {
+          // エイリアスを返す
+          aliases = emoji["aliases"]
+        }
+      } else {
+        // emoji.nameを返す
+        aliases.push(emoji["name"])
+      }
+      aliases
+    }
+    // 絵文字のエイリアスを返す(fRand = trueでランダム)
+    // param: emoji<obj>
+    // param: fRand<bool>
+    // return: <str>
+    getEmojiAliase: @(emoji, fRand) {
+      var aliase = ""
+      var aliases = this.getEmojiAliases(emoji)
+      if (fRand) {
+        // ランダムでエイリアスを返す
+        aliase = aliases[random(0, (aliases.len - 1))]
+      } else {
+        // エイリアスの先頭を返す
+        aliase = aliases[0]
+      }
+      aliase
+    }
+  }
+  this.constructor()
+}
+
+// 役データ
+let RANK_DATA = [
+  { value: "0", text: "ロイヤルフラッシュ" },
+  { value: "1", text: "ストレートフラッシュ" },
+  { value: "2", text: "フォーカード" },
+  { value: "3", text: "フルハウス" },
+  { value: "4", text: "フラッシュ" },
+  { value: "5", text: "ストレート" },
+  { value: "6", text: "スリーカード" },
+  { value: "7", text: "ツーペア" },
+  { value: "8", text: "ワンペア" },
+  { value: "9", text: "ハイカード" },
+  { value: "-1", text: "-" }
+]
+
+// カード
+// param: mark<num>
+// param: no<num>
+@Card(mark, no) {
+  let this = {
+    mark: 0
+    no: 0
+    // コンストラクタ
+    // param: mark<num>
+    // param: no<num>
+    constructor: @(mark, no) {
+      this.mark = mark
+      this.no = no
+      this
+    }
+    // 絵柄取得
+    // return: <num>
+    getMark: @() {
+      this.mark
+    }
+    // 数字設定
+    // param: no<num>
+    setNo: @(no) {
+      this.no = no
+    }
+    // 数字取得
+    // return: <num>
+    getNo: @() {
+      this.no
+    }
+  }
+  this.constructor(mark, no)
+}
+
+// 山札(52枚)
+@Deck() {
+  let this = {
+    cards: []
+    // コンストラクタ
+    constructor: @() {
+      this.cards = Arr:create(52)
+      this
+    }
+    // 配列の値入れ替え
+    // param: array<arr>
+    // param: i<num>
+    // param: j<num>
+    // return: <arr>
+    swap: @(i, j) {
+      var tmp = this.cards[i]
+      this.cards[i] = this.cards[j]
+      this.cards[j] = tmp
+    }
+    // 配列のシャッフル
+    // param: array<arr>
+    // return: <arr>
+    shuffle: @() {
+      var i = this.cards.len
+      for i {
+        var j = Math:floor(random() * i)
+        i -= 1
+        this.swap(i, j)
+      }
+    }
+    // 山札作成
+    create: @() {
+      this.cards = Core:range(0, 51).map(@(v) {
+        Card(Math:floor(v / 13), (v % 13) + 1)
+      })
+      this.shuffle()
+    }
+    // カードを引く
+    // return: <obj>
+    drawCard: @(index) {
+      let card = this.cards[index]
+      this.cards = this.cards.slice(0, index).concat(this.cards.slice((index + 1), this.cards.len))
+      card
+    }
+    // 手札を引く(絵柄・数字指定)
+    // param: mark<str>
+    // param: no<num>
+    // return: card<obj>
+    drawCardSelect: @(mark, no) {
+      var findIdx = -1
+      this.cards.find(@(v, i) {
+        findIdx = i
+        (v.getMark() == mark && v.getNo() == no)
+      })
+      this.drawCard(findIdx)
+    }
+  }
+  this.constructor()
+}
+
+// 手札(5枚)
+@Hand() {
+  let this = {
+    cards: []
+    // コンストラクタ
+    constructor: @() {
+      this.cards = Arr:create(5)
+      this
+    }
+    // 手札取得
+    // return: <arr[obj, obj...]>
+    getCards: @() {
+      this.cards
+    }
+    // 手札追加
+    // param: card<obj>
+    addCard: @(card) {
+      for (let i = 0, this.cards.len) {
+        if (this.cards[i] == null) {
+          this.cards[i] = card
+          break
+        }
+      }
+    }
+    // 手札ソート
+    sortHand: @() {
+      this.cards.sort(@(a, b) {
+        (b.getNo() - a.getNo())
+      })
+    }
+    // 手札ソート(1を14としてソート)
+    sortExchangeAce: @() {
+      this.sortHand()
+      loop {
+        if (this.cards[this.cards.len -1].getNo() == 1) {
+          this.cards[this.cards.len -1].setNo(14)
+          this.sortHand()
+        } else {
+          break
+        }
+      }
+    }
+    // 手札ソート(14を1に戻してソート)
+    sortReturnAce: @() {
+      this.sortHand()
+      loop {
+        if (this.cards[0].getNo() == 14) {
+          this.cards[0].setNo(1)
+          this.sortHand()
+        } else {
+          break
+        }
+      }
+    }
+    // 同じ数字の枚数
+    // return: <num>
+    getSameNoCount: @() {
+      var count = 0
+      for (let i = 0, (this.cards.len - 1)) {
+        if (this.cards[i].getNo() == this.cards[i+1].getNo()) {
+          count += 1
+        }
+      }
+      count
+    }
+    // 絵柄が全て同じかどうか
+    // return: <bool>
+    isSameMark: @() {
+      var i = 0
+      loop {
+        if (i == (this.cards.len - 1)) {
+          break
+        }
+    
+        if (this.cards[i].getMark() == this.cards[i+1].getMark()) {
+          i += 1
+        } else {
+          break
+        }
+      }
+      if (i == (this.cards.len - 1)) {
+        return true
+      } else {
+        return false
+      }
+    }
+    // 数字が階段かどうか
+    // return: <bool>
+    isStairsNo: @() {
+      var i = 0
+      loop {
+        if (i == (this.cards.len - 1)) {
+          break
+        }
+        if ((this.cards[i].getNo() - this.cards[i+1].getNo()) == 1) {
+          i += 1
+        } else {
+          break
+        }
+      }
+      if (i == (this.cards.len - 1)) {
+        return true
+      } else {
+        return false
+      }
+    }
+    // 階段かどうか
+    // return: <bool>
+    isStairs: @() {
+      if (this.isStairsNo()) {
+        return true
+      } else {
+        this.sortExchangeAce()
+        if (this.isStairsNo()) {
+          return true
+        } else {
+          return false
+        }
+      }
+    }
+    // 役判定
+    // return: <num>
+    judgeRank: @() {
+      var rank = -1
+      if (this.cards.len != 5) {
+        rank = 0
+        return rank
+      }
+      this.sortHand()
+      rank = 10
+      rank = this.judgeVariousRank()
+
+      if (this.isSameMark()) {
+        if (rank > 4) {
+          rank = 4
+        }
+      }
+
+      if (this.isStairs()) {
+        if (this.isSameMark()) {
+          if (rank != 0) {
+            rank = this.judgeRoyalFlash()
+          }
+        } else {
+          if (rank > 5) {
+            rank = 5
+          }
+        }
+      }
+      this.sortReturnAce()
+      return rank
+    }
+    // 階段以外の役
+    // return: <num>
+    judgeVariousRank: @() {
+      match this.getSameNoCount() {
+        // ハイカード
+        0 => {
+          return 9
+        }
+        // ワンペア
+        1 => {
+          return 8
+        }
+        // スリーカード or ツーペア
+        2 => {
+          if ((this.cards[0].getNo() == this.cards[1].getNo() && this.cards[1].getNo() == this.cards[2].getNo()) || (this.cards[1].getNo() == this.cards[2].getNo() && this.cards[2].getNo() == this.cards[3].getNo()) || (this.cards[(this.cards.len - 1)].getNo() == this.cards[(this.cards.len - 2)].getNo() && this.cards[(this.cards.len - 2)].getNo() == this.cards[(this.cards.len - 3)].getNo())) {
+            return 6
+          } else {
+            return 7
+          }
+        }
+        // フォーカード or フルハウス
+        3 => {
+          if (this.cards[1].getNo() == this.cards[2].getNo() && this.cards[2].getNo() == this.cards[3].getNo()) {
+            return 2
+          } else {
+            // フルハウス
+            return 3
+          }
+        }
+      }
+    }
+    // ロイヤルフラッシュ or ストレートフラッシュ
+    // return: <num>
+    judgeRoyalFlash: @() {
+      if (this.cards[0].getNo() == 14 && this.cards[(this.cards.len - 1)].getNo() == 10) {
+        return 0
+      } else {
+        return 1
+      }
+    }
+  }
+  this.constructor()
+}
+
+// 継承
+// 参考: 
+@Extends(p, c) {
+  let r = Obj:copy(p)
+  each (let kv, Obj:kvs(c)) {
+    Obj:set(r, kv[0], kv[1])
+  }
+  r.super = p
+  r
+}
+
+// 基底
+// param: name<str>
+@Base(name) {
+  let this = {
+    name: ""
+    hand: null
+    // コンストラクタ
+    // param: name<str>
+    constructor: @(name) {
+      this.name = name
+      this.hand = Hand()
+      this
+    }
+    // 名前取得
+    // return: <str>
+    getName: @() {
+      this.name
+    }
+    // 手札取得
+    // return: <obj>
+    getHand: @() {
+      this.hand
+    }
+    // カードを引く
+    // param: card<obj>
+    hit: @(card) {
+      this.hand.addCard(card)
+    }
+  }
+  this.constructor(name)
+}
+
+// プレイヤー
+// param: name<str>
+@Player(name) {
+  let this = Extends(Base(name), {
+    // コンストラクタ
+    constructor: @() {
+      this
+    }
+  })
+  this.constructor()
+}
+
+@Game() {
+  // ゲーム背景色
+  let BACK_COLOR = "000033"
+  // 役の背景色
+  let RANK_BACK_COLOR = "000063"
+  // 役の文字色
+  let RANK_FONT_COLOR = "00FFD9"
+
+  // 数字の文字色
+  let COLORS = ["dc143c", "3cdb14", "143cdb", "2f4f4f"]
+  // 数字
+  let NOS = ["-", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+
+  var emojiMng = null
+  var select_category = ""
+  var select_category_emojis = []
+  var select_category_items = []
+  var marks = []
+  var deck = null
+  var player = null
+  var rank = -1
+  var select_rank = -1
+
+  // 初期化
+  @init() {
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `カスタム絵文字読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    emojiMng = EmojiManager()
+    
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `カテゴリ選択肢作成中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    // カテゴリ選択肢作成
+    select_category_items = []
+    each (let category, emojiMng.getCategories()) {
+      select_category_items.push({
+        text: `{category}({emojiMng.getCategoryEmojis(category).len})`
+        value: category
+      })
+    }
+
+    // カテゴリ(ランダム)
+    let categories = emojiMng.getCategories()
+    createMark(categories[random(0, (categories.len - 1))])
+
+    createDeck()
+    createPlayer()
+
+    main()
+  }
+  // 絵柄選定
+  // param: category<str>
+  @createMark(category) {
+    
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `カテゴリの絵文字を読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    select_category = category
+    marks = []
+    // カテゴリ(ランダム)の絵文字を取得
+    select_category_emojis = emojiMng.getCategoryEmojis(category)
+
+    // 選択されたカテゴリの絵文字数が6以下の場合、
+    // ランダムで追加する
+    if (6 > select_category_emojis.len) {
+      loop {
+        if (select_category_emojis.len == 6) break
+
+        let emoji = emojiMng.getRandomEmoji()
+        // 被っていなかったら追加
+        if (select_category_emojis.filter(@(v) {
+          v.name == emoji.name
+        }).len == 0) {
+          select_category_emojis.push(emoji)
+        }
+      }
+    }
+
+    // 絵文字選出(被りなし4種)
+    loop {
+      if (marks.len == 4) break
+
+      let emoji = select_category_emojis[random(0, (select_category_emojis.len - 1))]
+      // 被っていなかったら追加
+      if (!marks.incl(`:{emoji.name}:`)) {
+        marks.push(`:{emoji.name}:`)
+      }
+    }
+  }
+  // デッキ作成
+  @createDeck() {
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `山札作成中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    deck = Deck()
+    deck.create()
+  }
+  // プレイヤー作成
+  @createPlayer() {
+    player = Player(USER_USERNAME)
+    createHand()
+  }
+  // 指定の役を引く
+  @createHand() {
+    match select_rank {
+      // ロイヤルフラッシュ
+      0 => {
+        let m = random(0, (marks.len - 1))
+        let RF_NOS = [1, 10, 11, 12, 13]
+        each (let n, RF_NOS) {
+          player.hit(deck.drawCardSelect(m, n))
+        }
+      }
+      // ストレートフラッシュ
+      1 => {
+        let m = random(0, (marks.len - 1))
+        let n = random(1, (NOS.len - 5))
+        for (let i = 0, 5) {
+          player.hit(deck.drawCardSelect(m, (n + i)))
+        }
+      }
+      // フォーカード
+      2 => {
+        let FOK_MARKS = [0, 1, 2, 3, 3]
+        let n = random(1, (NOS.len - 1))
+        let FOK_NOS = [n, n, n, n, (NOS.len - n)]
+        for (let i = 0, 5) {
+          player.hit(deck.drawCardSelect(FOK_MARKS[i], FOK_NOS[i]))
+        }
+      }
+      // フルハウス
+      3 => {
+        let n = random(1, (NOS.len - 3))
+        player.hit(deck.drawCardSelect(0, n))
+        player.hit(deck.drawCardSelect(0, n + 1))
+        player.hit(deck.drawCardSelect(1, n))
+        player.hit(deck.drawCardSelect(1, n + 1))
+        player.hit(deck.drawCardSelect(2, n + 1))
+      }
+      // フラッシュ
+      4 => {
+        let m = random(0, (marks.len - 1))
+        let n = random(1, 5)
+        for (let i = 0, 5) {
+          player.hit(deck.drawCardSelect(m, (n + (i * 2))))
+        }
+      }
+      // ストレート
+      5 => {
+        let n = random(1, (NOS.len - 5))
+        for (let i = 0, 5) {
+          let m = Math:floor((i % marks.len))
+          player.hit(deck.drawCardSelect(m, (n + i)))
+        }
+      }
+      // スリーカード
+      6 => {
+        let TOK_MARKS = [0, 1, 2, 3, 3]
+        let n = random(1, (NOS.len - 3))
+        let TOK_NOS = [n, n, n, (NOS.len - 2), (NOS.len - 1)]
+        for (let i = 0, 5) {
+          player.hit(deck.drawCardSelect(TOK_MARKS[i], TOK_NOS[i]))
+        }
+      }
+      // ツーペア
+      7 => {
+        let m = random(0, 1)
+        let n = random(1, (NOS.len - 3))
+        player.hit(deck.drawCardSelect(m, n))
+        player.hit(deck.drawCardSelect(m, (n + 1)))
+        player.hit(deck.drawCardSelect((m + 1), n))
+        player.hit(deck.drawCardSelect((m + 1), (n + 1)))
+        player.hit(deck.drawCardSelect((marks.len - 1), (NOS.len - 1)))
+      }
+      // ワンペア
+      8 => {
+        let n = random(1, 5)
+        player.hit(deck.drawCardSelect(3, n))
+        for (let i = 0, 4) {
+          player.hit(deck.drawCardSelect(i, (n + (i * 2))))
+        }
+      }
+      // ハイカード
+      9 => {
+        player.hit(deck.drawCardSelect(0, 1))
+        for (let i = 0, 4) {
+          player.hit(deck.drawCardSelect(i, (i + (i + 2))))
+        }
+      }
+      * => {
+        for 5 {
+          player.hit(deck.drawCard(0))
+        }
+      }
+    }
+  }
+  // もう一度
+  @replay() {
+
+    var fReplay = true
+    // レアな役が出ていたら確認する
+    if (select_rank == -1 && rank < 6) {
+      fReplay = Mk:confirm(`{RANK_DATA[rank].text}ですやん！`, [
+        `レアな役が出てますけども、回してええのん？`
+        `$[x2 :kanshaseeyo::mimichan_sakanano:]`
+      ].join(Str:lf), "warning")
+    }
+
+    if (fReplay) {
+      select_rank = -1
+      render([])
+      createDeck()
+      createPlayer()
+
+      main()
+    }
+  }
+  // リロード
+  // param: category<str>
+  @reload(category) {
+    render([])
+    createMark(category)
+    createDeck()
+    createPlayer()
+
+    main()
+  }
+  // メイン処理
+  @main() {
+    rank = player.getHand().judgeRank()
+    // フィールド表示用
+    let fieldMfm = [
+      `$[position.x=0,y=10 $[scale.x=-25,y=-10.8 $[bg.color={BACK_COLOR} 　]]]`
+    ].join("")
+
+    // ロゴ表示用
+    let logoMfm = eval {
+      var mfm = [
+        `$[position.y=4 $[scale.x=2,y=2 $[fg.color=ff0 $[font.serif <i>**`
+        `{POKER_LOGO}`
+        `**</i>]]]]`
+      ].join("")
+      // ストレート以上ならrainbow
+      if (rank < 6) {
+        mfm = `$[rainbow {mfm}]`
+      }
+      mfm
+    }
+
+    // カード下地表示用
+    let backMfm = [
+      "$[position.x=-7.0 $[scale.x=3.0,y=4.0 ⬜]]"
+      "$[position.x=-3.5 $[scale.x=3.0,y=4.0 ⬜]]"
+      "$[position.x=0.0 $[scale.x=3.0,y=4.0 ⬜]]"
+      "$[position.x=3.5 $[scale.x=3.0,y=4.0 ⬜]]"
+      "$[position.x=7.0 $[scale.x=3.0,y=4.0 ⬜]]"
+    ].join()
+
+    // 絵柄表示用
+    let markMfm = eval {
+      let mfm = []
+      var x = -9.6
+      var y = -2.5
+      let buffX = 4.8
+      let buffY = -2.0
+      each (let card, player.getHand().getCards()) {
+        mfm.push(`$[position.x={x},y={y} $[scale.x=1.5,y=1.5 {marks[card.getMark()]}]]`)
+        x += buffX
+        y += buffY
+      }
+      mfm.join(Str:lf)
+    }
+
+    // 数字表示用
+    let numMfm = eval {
+      let mfm = []
+      var x = -9.6
+      var y = -9.75
+      let buffX = 4.8
+      let buffY = -1.35
+      each (let card, player.getHand().getCards()) {
+        mfm.push(`$[position.x={x},y={y} $[scale.x=1.5,y=1.5 $[fg.color={COLORS[card.getMark()]} {NOS[card.getNo()]}]]]`)
+        x += buffX
+        y += buffY
+      }
+      mfm.join(Str:lf)
+    }
+
+    // カード表示用
+    let cardMfm = [
+      `$[position.y=8 {backMfm.trim()}`
+      markMfm.trim()
+      `{numMfm.trim()}]`
+    ].join(Str:lf)
+
+    // 手札表示用
+    let handMfm = []
+    each (let card, player.getHand().getCards()) {
+      handMfm.push(`{marks[card.getMark()]}, $[fg.color={COLORS[card.getMark()]} {NOS[card.getNo()]}]`)
+    }
+
+    // 役
+    let rankMfm = `$[position.y=-5.5 $[scale.x=1.5,y=1.5 $[fg.color={RANK_FONT_COLOR} $[bg.color={RANK_BACK_COLOR} **{RANK_DATA[rank].text}**]]]]`
+
+    // 結果表示用
+    let resultMfm = [
+      fieldMfm
+      logoMfm
+      cardMfm
+      rankMfm
+    ].join(Str:lf)
+
+    // 投稿用テキスト
+    let postText = [
+      `<center>`
+      resultMfm
+      PLAY_TAG
+      PLAY_URL
+      `</center>`
+    ].join(Str:lf)
+
+    // 残り山札表示用
+    let deckMfm = []
+    each (let card, deck.cards) {
+      deckMfm.push([
+        `{marks[card.getMark()]} $[fg.color={COLORS[card.getMark()]} {NOS[card.getNo()]}]`
+      ].join())
+    }
+
+    // 描画オブジェクト
+    let render_components = []
+
+    render_components.push(
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: resultMfm
+          })
+        ]
+        align: "center"
+      })
+    )
+// 役確認中は投稿できないように
+    if (select_rank == -1) {
+      render_components.push(
+        Ui:C:container({
+          children: [
+/*
+            Ui:C:button({
+              text: "もう一度"
+              onClick: @() {
+                replay()
+              }
+            })
+            Ui:C:select({
+              items: select_category_items
+              onChange: @(value) {
+                reload(value)
+              }
+              label: "絵柄を再選定してもう一度"
+              caption: "カテゴリを選択すると絵柄を再選出します。"
+            })
+*/
+            Ui:C:postFormButton({
+              text: "投稿する"
+              form: {
+                text: postText
+              }
+              primary: true
+              rounded: true
+            })
+          ]
+          align: "center"
+        })
+      )
+    }
+
+// 確率
+    let all_c = eval {
+      var a = 52 * 51 * 50 * 49 * 48
+      var b = 5 * 4 * 3 * 2 * 1
+      (a / b)
+    }
+    let rank_c = [4, 36, 624, 3744, 5108, 10200, 54912, 123552, 1098240, 1302540]
+
+    let probabilityMfm = []
+    for (let i = 0, rank_c.len) {
+      var p = Math:round((rank_c[i] / all_c) * 10000000) / 100000
+      probabilityMfm.push(`{p}%: {RANK_DATA[i].text}`)
+    }
+
+    render_components.push(
+      Ui:C:container({
+        children: [
+          Ui:C:folder({
+            children: [
+              Ui:C:select({
+                items: RANK_DATA
+                onChange: @(value) {
+                  if (value != "-") {
+                    select_rank = value.to_num()
+                    render([])
+                    createDeck()
+                    createPlayer()
+
+                    main()
+                  }
+                }
+                default: "-1"
+                label: "指定の役を見る"
+                caption: "⚠投稿はできません"
+              })
+/*
+              Ui:C:button({
+                text: "もう一度"
+                onClick: @() {
+                  replay()
+                }
+              })
+*/
+            ]
+            title: "役確認"
+            opened: false
+          })
+          Ui:C:folder({
+            children: [
+              Ui:C:container({
+                children: [
+                  Ui:C:mfm({
+                    text: `<small>{probabilityMfm.join(Str:lf)}</small>`
+                  })
+                ]
+                align: "left"
+             })
+            ]
+            title: "確率情報"
+            opened: false
+          })
+          Ui:C:folder({
+            children: [
+              Ui:C:mfm({
+                text: [
+                  `Category: {select_category}`
+                ].join(Str:lf)
+              })
+              Ui:C:mfm({
+                text: [
+                  `選出された絵柄({marks.len})`
+                  marks.join()
+                ].join(Str:lf)
+              })
+              Ui:C:mfm({
+                text: [
+                  `すべての絵柄({select_category_emojis.len})`
+                  select_category_emojis.map(@(v) {
+                    `:{v.name}:`
+                  }).join()
+                ].join(Str:lf)
+              })
+              Ui:C:mfm({
+                text: [
+                  `残り山札({deck.cards.len})`
+                  deckMfm.join()
+                ].join(Str:lf)
+              })
+            ]
+            title: "絵柄情報"
+            opened: false
+          })
+        ]
+        align: "center"
+      })
+    )
+
+    render(render_components)
+  }
+  // 描画
+  // param: components<arr>
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

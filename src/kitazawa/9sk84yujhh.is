@@ -1,0 +1,226 @@
+/// @ 0.18.0
+// 今日ののびみみちゃん
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let PLAY_NAME = "今日ののびみみちゃん"
+let TAG_NAME = "#NOBI_MIMICHAN"
+let PLAY_URL = if exists THIS_URL THIS_URL else "https://msk.kitazawa.me/play/9sk84yujhh"
+
+let random = eval {
+  var id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「ユーザーID+今日の日付」である乱数生成器を用意
+  Math:gen_rng(`{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「ユーザーID+ミリ秒」である乱数生成器を用意
+//  Math:gen_rng(`{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+:: Arr {
+  // ランダムで配列の値を返す
+  // param: array<arr>
+  // return: <arr[0~(arr.len - 1)]>
+  @randomSelect(array) {
+    array[random(0, (array.len - 1))]
+  }
+  // 指定の配列を削除した配列を返す
+  // param: array<arr>
+  // param: index<num>
+  // return: <arr>
+  @splice(array, index) {
+    array.slice(0, index).concat(array.slice((index + 1), array.len))
+  }
+}
+
+:: Ui {
+  // 指定UIのhidden処理
+  // param: name<str>
+  // param: f<bool>
+  @hidden(name, f) {
+    Ui:get(name).update({
+      hidden: f
+    })
+  }
+  // 指定UIのdisabled処理
+  // param: name<str>
+  // param: f<bool>
+  @disabled(name, f) {
+    Ui:get(name).update({
+      disabled: f
+    })
+  }
+}
+
+@Game() {
+  // 空の色取得(3時間おき)
+  @getSkyColor() {
+    var color = ""
+    match true {
+      // 漆黒
+      (Date:hour() >= 0 && 3 > Date:hour()) => {
+        color = "000030"
+      }
+      // 褐返
+      (Date:hour() >= 3 && 6 > Date:hour()) => {
+        color = "203744"
+      }
+      // 白藍
+      (Date:hour() >= 6 && 9 > Date:hour()) => {
+        color = "c1e4e9"
+      }
+      // 空色
+      (Date:hour() >= 9 && 12 > Date:hour()) => {
+        color = "a0d8ef"
+      }
+      // 空色
+      (Date:hour() >= 12 && 15 > Date:hour()) => {
+        color = "87ceeb"
+      }
+      // 紅掛空色
+      (Date:hour() >= 15 && 18 > Date:hour()) => {
+        color = "8491c3"
+      }
+      // 濃藍
+      (Date:hour() >= 18 && 21 > Date:hour()) => {
+        color = "0f2350"
+      }
+      // 鉄紺
+      (Date:hour() >= 21 && 24 > Date:hour()) => {
+        color = "17184b"
+      }
+    }
+    color
+  }
+  // メイン処理
+  @main() {
+    let max_num = 20
+    var mimi_num = random(2, max_num)
+
+    let mimiMfm = []
+    // 上半身
+    mimiMfm.push(":nibimimi_1:")
+    // 胴体
+    for (mimi_num - 2) {
+      mimiMfm.push(":nobimimi_2:")
+    }
+    // 下半身
+    mimiMfm.push(":nobimimi_3:")
+    // 残り埋め
+    for (max_num - mimi_num) {
+      mimiMfm.unshift(":tp:")
+    }
+
+    // みみ長
+    let heightMfm = eval {
+      var mfm = `{mimi_num}億㌖`
+      // みみ長MAXなら装飾
+      if (mimi_num == max_num) {
+        mfm = `$[sparkle ***{mfm}***]`
+      }
+      mfm
+    }
+
+    // 背景(時間によって変化)
+    let backgroundMfm = [
+      `$[blur `
+      `$[position.x=1.0,y=22 $[scale.x=-8,y=-22 $[bg.color={getSkyColor()} :tp:]]]`
+      `$[position.x=-1.0,y=44 $[scale.x=-8,y=-2 $[bg.color=bc763c :tp:]]]`
+      `]`
+    ].join()
+
+    // 太陽 or 月(時間によって変化)
+    let starMfm = eval {
+      var star = ""
+      match true {
+        (Date:hour() >= 5 && 19 > Date:hour()) => { star = "🌞" }
+        (Date:hour() >= 19 || 5 > Date:hour()) => { star = "🌛" }
+      }
+      star
+    }
+
+    // 空のパーツ
+    let skyPartsMfm = [
+      `$[position.x=8,y=0 $[scale.x=2.0,y=2.0 {starMfm}]]`
+      `$[position.x=-4,y=6 $[scale.x=2.0,y=2.0 ☁️]]`
+      `$[position.x=4,y=12 $[scale.x=2.0,y=2.0 ☁️]]`
+      `$[position.x=-4,y=18 $[scale.x=2.0,y=2.0 ☁️]]`
+      `$[position.x=4,y=24 $[scale.x=2.0,y=2.0 ☁️]]`
+      `$[position.x=-4,y=30 $[scale.x=2.0,y=2.0 ☁️]]`
+    ].join()
+
+    // 結果表示用
+    let resultMfm = [
+      `$[x2 {heightMfm}]`
+      backgroundMfm
+      skyPartsMfm
+      `$[position.x=0,y=38 :tp:$[jump $[flip :mimi_warai:]]:tp:$[jump :mimi_warai:]:tp:]`
+      `$[position.x=2,y=37.5 $[jump.delay=0.1s $[flip :mimi_ha:]]]:tp:$[position.x=0,y=39 $[jump.delay=0.2s $[flip :mimi_oshiri:]]]:tp:$[position.x=0,y=39 $[jump.delay=0.2s :mimi_oshiri:]]:tp:$[position.x=-2,y=37.5 $[jump.delay=0.1s :mimi_ha:]]`
+      `$[position.y=-2 {mimiMfm.join(Str:lf)}]`
+    ].join(Str:lf)
+
+    // 結果表示UI更新
+    Ui:get("resultMfm").update({
+      text: resultMfm
+    })
+
+    // 投稿用テキスト
+    let postText = [
+      `<center>`
+      PLAY_NAME
+      resultMfm
+      TAG_NAME
+      PLAY_URL
+      `</center>`
+    ].join(Str:lf)
+
+    // 投稿UI更新
+    Ui:get("postFormButton").update({
+      text: "投稿する"
+      form: {
+        text: postText
+      }
+      primary: true
+      rounded: true
+    })
+
+    // UI表示・非表示
+    Ui:hidden("loading_area", true)
+    Ui:hidden("main_area", false)
+    Ui:hidden("post_area", false)
+  }
+  main()
+}
+
+Ui:render([
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 {PLAY_NAME}]`
+      }, "titleMfm")
+    ]
+    align: "center"
+  } "title_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 $[bounce Now Loading...]]`
+      }, "loadingMfm")
+    ]
+    align: "center"
+  } "loading_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "resultMfm")
+    ]
+    align: "center"
+    hidden: true
+  }, "main_area")
+  Ui:C:container({
+    children: [
+      Ui:C:postFormButton({}, "postFormButton")
+    ]
+    align: "center"
+    hidden: true
+  }, "post_area")
+])
+Game()

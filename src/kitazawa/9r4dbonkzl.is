@@ -1,0 +1,251 @@
+/// @ 0.19.0
+// ノアーﾉﾚを探せ
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9r4dbonkzl`
+let PLAY_TAG = "#KITAZAWA_MINOIR"
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_NAME
+
+let random = eval {
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+@Game() {
+  let V_NUM = 7
+  let H_NUM = 7
+  var noirArray = Core:range(1, (V_NUM * H_NUM)).map(@() {
+    null
+  })
+  var noir_pos = -1
+  var count_down = 3
+  var startTime = 0
+  var stopTime = 0
+  var isSuccess = false
+
+  // 初期化
+  @init() {
+    noir_pos = random(0, ((V_NUM * H_NUM) - 1))
+    count_down = 3
+    startTime = 0
+    stopTime = 0
+    isSuccess = false
+
+    for (let i = 0, (V_NUM * H_NUM)) {
+      if (i == noir_pos) {
+        noirArray[i] = "$[clickable.ev=ybc_noir :ybc_noir:] "
+      } else {
+        noirArray[i] = "$[clickable.ev=happypocket_cocoasandcreamcookie :happypocket_cocoasandcreamcookie:] "
+      }
+    }
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `【ルール】`
+              `$[clickable.ev=happypocket_cocoasandcreamcookie :happypocket_cocoasandcreamcookie:]の中に隠れている$[clickable.ev=ybc_noir :ybc_noir:]を探す`
+              `見つけたらタップ！`
+              ``
+              `【ゲーム開始】`
+              `$[clickable.ev=ybc_noir :ybc_noir:]を押すと３カウント後にスタート`
+              ``
+              `$[clickable.ev=ybc_noir $[x3 :ybc_noir:]]`
+            ].join(Str:lf)
+            onClickEv: @(id) {
+              match id {
+                "ybc_noir" => {
+                  ready()
+                }
+                "happypocket_cocoasandcreamcookie" => {
+                  Mk:dialog("", "こっちじゃないよ")
+                }
+              }
+            }
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  // カウントダウン
+  @ready() {
+    if (count_down > 0) {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: [
+                `$[x3 {count_down}]`
+              ].join(Str:lf)
+            })
+          ]
+          align: "center"
+        })
+      ])
+      count_down -= 1
+      Async:timeout(1000, ready)
+    } else {
+      main()
+    }
+  }
+  // メイン処理
+  @main() {
+    let v = []
+    for (let i = 0, V_NUM) {
+      let h = []
+      for (let j = 0, H_NUM) {
+        let no = (i * H_NUM) + j
+        h.push(noirArray[no])
+      }
+      v.push(h.join())
+    }
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: v.join(Str:lf)
+            onClickEv: @(id) {
+              match id {
+                "ybc_noir" => {
+                  stopTime = (Date:now() - startTime)
+                  isSuccess = true
+                  Mk:dialog("正解！", "⭕")
+                  result()
+                }
+                "happypocket_cocoasandcreamcookie" => {
+                  stopTime = (Date:now() - startTime)
+                  isSuccess = false
+                  Mk:dialog("不正解！", "❌")
+                  result()
+                }
+              }
+            }
+          })
+        ]
+        align: "center"
+      })
+    ])
+    startTime = Date:now()
+  }
+  // 結果
+  @result() {
+    var unixtime = stopTime
+    var minute = (Math:floor((unixtime / 60000)) % 60)
+    var second = (Math:floor((unixtime / 1000)) % 60)
+    var millisecond = (unixtime % 1000)
+    if (unixtime < 0) {
+      hour = (hour + 24)
+      minute = (minute + 60)
+      second = (second + 60)
+      millisecond = (millisecond + 1000)
+    }
+    let resultTime = [
+      `{padStart(minute, 2, "0")}:`
+      `{padStart(second, 2, "0")}:`
+      `{padStart(millisecond, 3, "0")}`
+    ].join()
+
+    noirArray = noirArray.map(@(v) {
+      if (v.incl("ybc_noir")) {
+        `$[bg.color=38f $[jelly {v}]]`
+      } else {
+        v
+      }
+    })
+    let v = []
+    for (let i = 0, V_NUM) {
+      let h = []
+      for (let j = 0, H_NUM) {
+        let no = (i * H_NUM) + j
+        h.push(noirArray[no])
+      }
+      v.push(h.join())
+    }
+
+    // 描画オブジェクト
+    let render_components = []
+
+    render_components.push(
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: resultTime
+          })
+          Ui:C:mfm({
+            text: v.join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    )
+
+    render_components.push(
+      Ui:C:container({
+        children: [
+          Ui:C:button({
+            text: "もう一度"
+            onClick: @() {
+              init()
+            }
+          })
+        ]
+        align: "center"
+      })
+    )
+
+    if (isSuccess) {
+      render_components.push(
+        Ui:C:container({
+          children: [
+            Ui:C:postFormButton({
+              text: "投稿する"
+              form: {
+                text: [
+                  `<center>`
+                  `:happypocket_cocoasandcreamcookie::ybc_noir::time::ybc_noir::happypocket_cocoasandcreamcookie:`
+                  `$[jelly {resultTime}]`
+                  PLAY_URL
+                  `</center>`
+                ].join(Str:lf)
+              }
+              primary: true
+              rounded: true
+            })
+          ]
+          align: "center"
+        })
+      )
+    }
+
+    render(render_components)
+  }
+  // 0埋め
+  // param: num<num>
+  // param: target_len<num>
+  // param: pad_str<str>
+  // return: <str>
+  @padStart(num, target_len, pad_str) {
+    var str = num.to_str()
+    let digit = (target_len - str.len)
+  
+    for digit {
+      str = `{pad_str}{str}`
+    }
+    str
+  }
+  // 描画
+  // param: components<arr>
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

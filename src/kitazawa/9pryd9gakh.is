@@ -1,0 +1,412 @@
+/// @ 0.18.0
+// カスタム絵文字サークル
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let PLAY_NAME = "カスタム絵文字サークル"
+let PLAY_URL = if exists THIS_URL THIS_URL else "https://msk.kitazawa.me/play/9pryd9gakh"
+
+let random = eval {
+  var id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「ユーザーID+ミリ秒」である乱数生成器を用意
+  Math:gen_rng(`{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+// 除外する絵文字のカテゴリ
+// pagesのjsonデータ読み込み
+// https://{SERVER_URL}/@elysion/pages/ignore_emoji_data
+let IGNORE_EMOJI_LIST = eval {
+  var data = null
+  let pages_data = Mk:api("pages/show", {
+    name: "ignore_emoji_data"
+    username: "elysion"
+  })
+  if (Core:type(pages_data) == "error") {
+    data = {
+      category: [
+        null
+      ]
+    }
+  } else {
+    data = Json:parse(pages_data.content[0].text)
+  }
+  data
+}
+
+@EmojiManager() {
+  let this = {
+    obj: {}
+    categories: []
+    // コンストラクタ
+    constructor: @() {
+      // 除外カテゴリ以外の絵文字抽出
+      this.obj = CUSTOM_EMOJIS.filter(@(emoji) {
+        !IGNORE_EMOJI_LIST.category.incl(emoji.category)
+      })
+      // カテゴリー抽出
+      var prev_category = ""
+      for (let i = 0, (this.obj.len - 1)) {
+        if (prev_category != this.obj[i].category) {
+          this.categories.push(this.obj[i].category)
+        }
+        prev_category = this.obj[i].category
+      }
+      this
+    }
+    // 絵文字カテゴリを返す
+    // return: <arr>
+    getCategories: @() {
+      this.categories
+    }
+    // 絵文字を返す
+    // param: name<str>
+    // return: <arr>
+    getEmoji: @(name) {
+      this.obj.filter(@(v) {
+        (v.name == name)
+      }).pop()
+    }
+    // ランダムな絵文字を返す
+    // return: <obj>
+    getRandomEmoji: @() {
+      this.obj[random(0, (this.obj.len - 1))]
+    }
+    // カテゴリー内の絵文字を返す
+    // param: category<str>
+    // return: <arr>
+    getCategoryEmojis: @(category) {
+      this.obj.filter(@(emoji) {
+        emoji.category == category
+      })
+    }
+    // 絵文字のエイリアスを返す
+    // param: emoji<obj>
+    // return: <arr>
+    getEmojiAliases: @(emoji) {
+      var aliases = []
+      // 絵文字追加直後はaliasesに何も入っていない場合がある
+      if (emoji["aliases"].len > 0) {
+        // ""の場合
+        if (emoji["aliases"][0] == "") {
+          // emoji.nameを返す
+          aliases.push(emoji["name"])
+        } else {
+          // エイリアスを返す
+          aliases = emoji["aliases"]
+        }
+      } else {
+        // emoji.nameを返す
+        aliases.push(emoji["name"])
+      }
+      aliases
+    }
+    // 絵文字のエイリアスを返す(fRand = trueでランダム)
+    // param: emoji<obj>
+    // param: fRand<bool>
+    // return: <str>
+    getEmojiAliase: @(emoji, fRand) {
+      var aliase = ""
+      var aliases = this.getEmojiAliases(emoji)
+      if (fRand) {
+        // ランダムでエイリアスを返す
+        aliase = aliases[random(0, (aliases.len - 1))]
+      } else {
+        // エイリアスの先頭を返す
+        aliase = aliases[0]
+      }
+      aliase
+    }
+  }
+  this.constructor()
+}
+
+@Game() {
+  let emojiMng = EmojiManager()
+  var select_category = ""
+  var select_category_emoji = ""
+  var emojiArray = []
+
+  // カテゴリ選択肢変更イベント
+  // param: category<str>
+  @changeCategory(category) {
+    // 押せなくしておく
+    Ui:get("emojiCategoryButton").update({ disabled: true })
+    Ui:get("emojiNameButton").update({ disabled: true })
+
+    select_category = category
+
+    // 絵文字選択肢作成
+    let emoji_items = []
+    let category_emojis = emojiMng.getCategoryEmojis(select_category)
+    each (let emoji, category_emojis) {
+      let aliase = emojiMng.getEmojiAliase(emoji, false)
+      emoji_items.push({
+        text: `{aliase}(:{emoji.name}:)`
+        value: emoji.name
+      })
+    }
+
+    select_category_emoji = emoji_items[0].value
+
+    // 選択肢UI更新
+    Ui:get("emojiNameSelect").update({
+      items: emoji_items
+      onChange: @(value) {
+        changeEmoji(value)
+      }
+      default: select_category_emoji
+      label: `絵文字({category_emojis.len})`
+    })
+
+    Ui:get("emojiCategoryButton").update({ disabled: false })
+    Ui:get("emojiNameButton").update({ disabled: false })
+  }
+  // 絵文字選択肢変更イベント
+  // param: emoji_name<str>
+  @changeEmoji(emoji_name) {
+    // 押せなくしておく
+    Ui:get("emojiCategoryButton").update({ disabled: true })
+    Ui:get("emojiNameButton").update({ disabled: true })
+
+    select_category_emoji = emoji_name
+
+    Ui:get("emojiMfm").update({
+      text: `$[x2 :{select_category_emoji}:]`
+    })
+
+    Ui:get("emojiCategoryButton").update({ disabled: false })
+    Ui:get("emojiNameButton").update({ disabled: false })
+  }
+  // 初期設定
+  @init() {
+
+    // もう一度ボタンUI更新
+    Ui:get("replayButton").update({
+      text: "全絵文字からランダム"
+      onClick: @() {
+        randomSelect()
+      }
+      disabled: true
+    })
+
+    // カテゴリ
+    select_category = emojiMng.getCategories()[0]
+    // カテゴリ選択肢作成
+    let category_items = []
+    each (let category, emojiMng.getCategories()) {
+      category_items.push({
+        text: category
+        value: category
+      })
+    }
+    // カテゴリ選択肢UI更新
+    Ui:get("emojiCategorySelect").update({
+      items: category_items
+      onChange: @(value) {
+        changeCategory(value)
+      }
+      default: select_category
+      label: `カテゴリ({emojiMng.getCategories().len})`
+    })
+
+    changeCategory(select_category)
+    changeEmoji(select_category_emoji)
+
+    Ui:get("emojiCategoryButton").update({
+      text: "カテゴリ内からランダム"
+      onClick: @() {
+        randomCategorySelect()
+      }
+      primary: true
+      rounded: true
+      disabled: true
+    })
+
+    Ui:get("emojiNameButton").update({
+      text: "決定"
+      onClick: @() {
+        submit()
+      }
+      primary: true
+      rounded: true
+      disabled: true
+    })
+
+    Ui:get("emojiFolder").update({
+      title: "絵柄情報"
+    })
+
+    randomSelect()
+<:`init end`
+  }
+  // 全絵文字からランダム
+  @randomSelect() {
+<:`randomSelect start`
+    // UI表示・非表示
+    Ui:get("loading_area").update( { hidden: false })
+    Ui:get("main_area").update( { hidden: true })
+    Ui:get("post_area").update( { hidden: true })
+    Ui:get("debug_area").update( { hidden: true })
+
+    Ui:get("replayButton").update( { disabled: true })
+    Ui:get("emojiCategoryButton").update( { disabled: true })
+    Ui:get("emojiNameButton").update( { disabled: true })
+
+    emojiArray = []
+    for 12 {
+      emojiArray.push(`:{emojiMng.getRandomEmoji().name}:`)
+    }
+    main()
+  }
+  // カテゴリ内からランダム
+  @randomCategorySelect() {
+    // UI表示・非表示
+    Ui:get("loading_area").update( { hidden: false })
+    Ui:get("main_area").update( { hidden: true })
+    Ui:get("post_area").update( { hidden: true })
+    Ui:get("debug_area").update( { hidden: true })
+
+    Ui:get("replayButton").update( { disabled: true })
+    Ui:get("emojiCategoryButton").update( { disabled: true })
+    Ui:get("emojiNameButton").update( { disabled: true })
+
+    emojiArray = []
+    for 12 {
+      let category_emojis = emojiMng.getCategoryEmojis(select_category)
+      let emoji = category_emojis[random(0, (category_emojis.len - 1))]
+      emojiArray.push(`:{emoji.name}:`)
+    }
+    main()
+  }
+  // 決定ボタン押下イベント
+  @submit() {
+    // UI表示・非表示
+    Ui:get("loading_area").update( { hidden: false })
+    Ui:get("main_area").update( { hidden: true })
+    Ui:get("post_area").update( { hidden: true })
+    Ui:get("debug_area").update( { hidden: true })
+
+    Ui:get("replayButton").update( { disabled: true })
+    Ui:get("emojiCategoryButton").update( { disabled: true })
+    Ui:get("emojiNameButton").update( { disabled: true })
+
+    emojiArray = []
+    for 12 {
+      emojiArray.push(`:{select_category_emoji}:`)
+    }
+    main()
+  }
+  // メイン処理
+  @main() {
+    // 円座標
+    let CIRCLE_POS = [
+      [ { x: 0.0, y: 0.5 }, { x: 0.0, y: 0.0 }, { x: 0.0, y: 0.5 } ],
+      [ { x: -2.5, y: 0.0 }, { x:  2.5, y: 0.0 } ],
+      [ { x: -3.0, y: 0.0 }, { x:  3.0, y: 0.0 }, ],
+      [ { x: -2.5, y: 0.0 }, { x:  2.5, y: 0.0 } ],
+      [ { x: 0.0, y: -0.5 }, { x: 0.0, y: 0.0 }, { x: 0.0, y: -0.5 } ]
+    ]
+    // 円座標に割り当て
+    let circleMfm = []
+    for (let i = 0, CIRCLE_POS.len) {
+      for (let j = 0, CIRCLE_POS[i].len) {
+        circleMfm.push(`$[position.x={CIRCLE_POS[i][j].x},y={CIRCLE_POS[i][j].y} $[spin.speed=5s,left {emojiArray[i+j]}]]`)
+      }
+      circleMfm.push(Str:lf)
+    }
+
+    // 結果表示用
+    let resultMfm = [
+      `$[spin.speed=5s {circleMfm.join()}]`
+    ].join(Str:lf)
+
+    // 結果表示UI更新
+    Ui:get("resultMfm").update({
+      text: resultMfm
+    })
+
+    // 投稿用テキスト
+    let postText = [
+      `<center>`
+      PLAY_NAME
+      resultMfm
+      PLAY_URL
+      `</center>`
+    ].join(Str:lf)
+
+    // 投稿UI更新
+    Ui:get("postFormButton").update({
+      text: "投稿する"
+      form: {
+        text: postText
+      }
+      primary: true
+      rounded: true
+    })
+
+    // UI表示・非表示
+    Ui:get("loading_area").update( { hidden: true })
+    Ui:get("main_area").update( { hidden: false })
+    Ui:get("post_area").update( { hidden: false })
+    Ui:get("debug_area").update( { hidden: false })
+
+    Ui:get("replayButton").update( { disabled: false })
+    Ui:get("emojiCategoryButton").update( { disabled: false })
+    Ui:get("emojiNameButton").update( { disabled: false })
+  }
+  init()
+}
+
+// UIを表示
+Ui:render([
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 {PLAY_NAME}]`
+      }, "titleMfm")
+    ]
+    align: "center"
+  } "title_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 $[bounce Now Loading...]]`
+      })
+    ]
+    align: "center"
+  } "loading_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "resultMfm")
+    ]
+    align: "center"
+    hidden: true
+  }, "main_area")
+  Ui:C:container({
+    children: [
+      Ui:C:button({}, "replayButton")
+      Ui:C:postFormButton({}, "postFormButton")
+    ]
+    align: "center"
+    hidden: true
+  }, "post_area")
+  Ui:C:container({
+    children: [
+      Ui:C:folder({
+        children: [
+          Ui:C:select({}, "emojiCategorySelect")
+          Ui:C:button({} "emojiCategoryButton")
+          Ui:C:select({}, "emojiNameSelect")
+          Ui:C:mfm({}, "emojiMfm")
+          Ui:C:button({} "emojiNameButton")
+        ]
+      }, "emojiFolder")
+    ]
+    align: "center"
+    hidden: true
+  }, "debug_area")
+])
+Game()

@@ -1,0 +1,312 @@
+/// @ 0.19.0
+// おきんたま戦隊
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let PLAY_NAME = "おきんたま戦隊"
+let PLAY_TAG = "#OKINTAMA_SENTAI"
+let PLAY_URL = if exists THIS_URL THIS_URL else "https://msk.kitazawa.me/play/9rc0j6qzt3"
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_NAME
+
+let random = eval {
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+// デバッグ用フラグ
+//let okintama_allcolor = true
+//let okintama_fullcolor = true
+
+let OKINTAMA_DATA = [
+  {
+    name: "tama_black",
+    mfm: "$[fg.color=000000 黒]",
+    tag: "BLACK"
+  },
+  {
+    name: "tama_blue",
+    mfm: "$[fg.color=04a9ff 青]",
+    tag: "BLUE"
+  },
+  {
+    name: "tama_brown",
+    mfm: "$[fg.color=a35756 茶]",
+    tag: "BROWN"
+  },
+  {
+    name: "tama_green",
+    mfm: "$[fg.color=00df25 緑]",
+    tag: "GREEN"
+  },
+  {
+    name: "tama_orange",
+    mfm: "$[fg.color=fc7e4d 橙]",
+    tag: "ORANGE"
+  },
+  {
+    name: "tama_pink",
+    mfm: "$[fg.color=fc3dad 桃]",
+    tag: "PINK"
+  },
+  {
+    name: "tama_purple",
+    mfm: "$[fg.color=a656fc 紫]",
+    tag: "PURPLE"
+  },
+  {
+    name: "tama_red",
+    mfm: "$[fg.color=fe0020 赤]",
+    tag: "RED"
+  },
+  {
+    name: "tama_silver",
+    mfm: "$[fg.color=d2d2d2 銀]",
+    tag: "SILVER"
+  },
+  {
+    name: "tama_yellow",
+    mfm: "$[fg.color=fdd400 黄]",
+    tag: "YELLOW"
+  }
+]
+
+@Game() {
+  var tamas = null
+  var counts = {}
+  var same_color = -1
+
+  // 初期化
+  @init() {
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `おきんたま読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    // ランダムな整数(0-9)で配列を生成
+    tamas = Core:range(1, 10).map(@() {
+      random(0, 9)
+    }).sort(@(a, b) {
+      (a - b)
+    })
+/*
+// デバッグ用: 全種違うカラー
+if exists okintama_allcolor {
+    for (let i = 0, tamas.len) {
+      tamas[i] = i
+    }
+}
+// デバッグ用: 全種同じカラー
+if exists okintama_fullcolor {
+    let index = random(0, 9)
+    for (let i = 0, tamas.len) {
+      tamas[i] = index
+    }
+}
+*/
+    same_color = -1
+    counts = countDuplicates(tamas)
+
+    main()
+  }
+  // 配列の各要素の重複数
+  // return: elements<arr>
+  // return: <arr>
+  @countDuplicates(elements) {
+    let counts = {}
+    // 出現回数をカウント
+    each (let element, elements) {
+      let key = element.to_str()
+      if (Obj:has(counts, key)) {
+        // 既にカウントされている場合はインクリメント
+        counts[key] += 1
+      } else {
+        // 初めて出現する要素の場合は初期化
+        counts[key] = 1
+      }
+    }
+    // 0から9の各数値の重複数を示す配列を生成
+    let duplicateCounts = Core:range(0, 9).map(@(v) {
+      let key = v.to_str()
+      if (Obj:has(counts, key)) counts[key] else 0
+    })
+    duplicateCounts
+  }
+  // 全ての色が存在するかどうか
+  // return: <bool>
+  @isAllColor() {
+    each (let count, counts) {
+      if (count != 1) {
+        return false
+      }
+    }
+    return true
+  }
+  // 全て同じ色かどうか
+  // return: <bool>
+  @isAllSameColor() {
+    for (let i, counts.len) {
+      if (counts[i] == 10) {
+        same_color = i
+        return true
+      }
+    }
+    return false
+  }
+  // もう一度
+  @replay() {
+    init()
+  }
+  // ピラミッド型のMFM作成
+  // param: tamas<arr[num]>
+  // param: fColorCheck<bool>
+  // return: <str>
+  @createTamaMfm(tamas, fColorCheck) {
+    let tamaMfm = []
+    for (let i = 0, tamas.len) {
+      if (fColorCheck) {
+        if (isAllColor() || isAllSameColor()) {
+          tamaMfm.push(`$[sparkle $[bounce :{OKINTAMA_DATA[tamas[i]].name}:]]`)
+        } else {
+          tamaMfm.push(`:{OKINTAMA_DATA[tamas[i]].name}:`)
+        }
+      } else {
+        tamaMfm.push(`:{OKINTAMA_DATA[tamas[i]].name}:`)
+      }
+      if (i == 0 || i == 2 || i == 5) {
+        tamaMfm.push(Str:lf)
+      }
+    }
+    tamaMfm.join()
+  }
+  // メイン処理
+  @main() {
+    // 結果表示用
+    let resultMfm = createTamaMfm(tamas, true)
+
+    // タグ用テキスト
+    let tagText = eval {
+      var text = PLAY_TAG
+      // 全種違うカラー
+      if (isAllColor()) text = `{text} {PLAY_TAG}_ALL`
+      // 全種同じカラー
+      if (isAllSameColor()) text = `{text} {PLAY_TAG}_{OKINTAMA_DATA[same_color].tag}`
+      text
+    }
+
+    // カラーカウント用
+    let countMfm = []
+    for (let i = 0, counts.len) {
+      countMfm.push(`{OKINTAMA_DATA[i].mfm}: {counts[i]} `)
+    }
+
+    // 玉情報UI更新
+    let tamaInfoMfm = [
+      `<small>{countMfm.join()}</small>`
+    ].join(Str:lf)
+
+    // アダルティックレア用
+    let adulticMfm = Core:range(0, 9).map(@(v) {
+      [
+        createTamaMfm(Core:range(0, 9).map(@() { v }), false)
+        `{SERVER_URL}/tags/OKINTAMA_SENTAI_{OKINTAMA_DATA[v].tag}`
+      ].join(Str:lf)
+    }).join(Str:lf)
+
+    // レア情報UI更新
+    let rareInfoMfm = [
+      `10種10玉(レア)`
+      `<small>確率: 約3.65%</small>`
+      `<small>{createTamaMfm([0,1,2,3,4,5,6,7,8,9], false)}`
+      `{SERVER_URL}/tags/OKINTAMA_SENTAI_ALL</small>`
+      `1種10玉(アダルティックレア)`
+      `<small>確率: 約0.00000001%`
+      `参考:宝くじ1等(23/4億6000万)が当たる確率`
+      `確率: 約0.000005%</small>`
+      `<small>{adulticMfm}</small>`
+    ].join(Str:lf)
+
+    // 投稿用テキスト
+    let postText = [
+      `<center>`
+      PLAY_NAME
+      resultMfm
+      tagText
+      PLAY_URL
+      `</center>`
+    ].join(Str:lf)
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: resultMfm
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:button({
+            text: "もう一度"
+            onClick: @() {
+              replay()
+            }
+          })
+          Ui:C:postFormButton({
+            text: "投稿する"
+            form: {
+              text: postText
+            }
+            primary: true
+            rounded: true
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:folder({
+            children: [
+              Ui:C:mfm({
+                text: tamaInfoMfm
+              })
+            ]
+            title: "玉情報"
+            opened: true
+          })
+          Ui:C:folder({
+            children: [
+              Ui:C:mfm({
+                text: rareInfoMfm
+              })
+            ]
+            title: "レア一覧"
+            opened: true
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  // 描画
+  // param: component<arr>
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

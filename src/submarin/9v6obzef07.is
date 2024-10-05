@@ -1,0 +1,121 @@
+/// @ 0.18.0
+// 初めてのノート
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let PLAY_NAME = "初めてのノート"
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9v6obzef07` 
+
+@Game() {
+  var input_text = USER_ID
+  // 初期設定
+  @init() {
+    Ui:get("textInput").update({
+      onInput: @(text) {
+        input_text = text
+      }
+      default: input_text
+      label: "ユーザーID"
+      caption: "⚠ユーザーID確認方法: プロフィール→rawタブ"
+    })
+    Ui:get("execButton").update({
+      onClick: @() {
+        search_first_note(input_text)
+      }
+      text: "確認する"
+    })
+    Ui:get("input_area").update({ hidden: false })
+    Ui:get("main_area").update({ hidden: false })
+  }
+  // 初めてのノート検索
+  // <param> user_id<str>
+  @search_first_note(user_id) {
+    // 結果表示テキスト
+    let resultMfm = []
+    // ユーザーの情報を取得
+    let user = Mk:api("users/show", {
+      userId: user_id
+    })
+    match Core:type(user) {
+      "error" => {
+        Mk:dialog(user.name, "ユーザー情報が取得できませんでした。", "error")
+        resultMfm.push([
+          user.name
+          Json:stringify(user.info)
+        ].join(Str:lf))
+      }
+      "obj" => {
+        // ユーザーのノートを取得
+        let notes = Mk:api("users/notes", {
+          userId: user.id
+          sinceDate: Date:parse(user.createdAt)
+          limit: 1
+        })
+      
+        match Core:type(notes) {
+          "error" => {
+            Mk:dialog(notes.name, "ノートが取得できませんでした。", "error")
+            resultMfm.push([
+              notes.name
+              Json:stringify(notes.info)
+            ].join(Str:lf))
+          }
+          "arr" => {
+            let user_username = eval {
+              match user.host {
+                null => { `@{user.username}` }
+                * => { `@{user.username}@{user.host}` }
+              }
+            }
+            resultMfm.push([
+              `$[border.radius=5 $[x2 {user_username}]`
+              `{notes[0].text}`
+              `[ノートへのリンク]({SERVER_URL}/notes/{notes[0].id})]`
+              `<small>⚠️リモートユーザーの場合はうまく取得できない可能性があります</small>`
+            ].join(Str:lf))
+          }
+        }
+      }
+    }
+    // 結果表示UI更新
+    Ui:get("resultMfm").update({
+      text: resultMfm.join(Str:lf)
+    })
+  }
+  init()
+}
+
+Ui:render([
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 {PLAY_NAME}]`
+      }, "titleMfm")
+    ]
+    align: "center"
+  } "title_area")
+  Ui:C:container({
+    children: [
+      Ui:C:textInput({}, "textInput")
+      Ui:C:button({}, "execButton")
+    ]
+    align: "center"
+    hidden: true
+  }, "input_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "resultMfm")
+    ]
+    align: "left"
+    hidden: true
+  }, "main_area")
+])
+if (USER_ID != null) {
+  Game()
+} else {
+  Mk:dialog("", [
+    "ユーザーIDが見つかりませんでした"
+    "ログインしてから遊んでみてね"
+  ].join(Str:lf), "error")
+}

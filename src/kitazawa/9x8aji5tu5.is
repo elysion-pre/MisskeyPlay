@@ -1,0 +1,159 @@
+/// @ 0.19.0
+// 初めてのノート
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+@Game() {
+  var input_text = ""
+
+  // 初期化
+  @init() {
+    if (USER_ID == null) {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: `$[x4 :GoBack:]`
+            })
+          ]
+          align: "center"
+        })
+      ])
+      Mk:dialog("エラー", [
+        `ユーザーIDが見つかりませんでした`
+        `$[x2 :fushiginakotomoarumondesuna::mimi_hate:]`
+        `ログインしてから遊んでみてねー👋`
+      ].join(Str:lf), "error")
+    } else {
+      input_text = USER_ID
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:textInput({
+              onInput: @(text) {
+                input_text = text
+              }
+              default: input_text
+              label: "ユーザーID"
+              caption: "⚠ユーザーID確認方法: プロフィール→rawタブ"
+            })
+            Ui:C:button({
+              onClick: main
+              text: "確認する"
+            })
+          ]
+          align: "center"
+        })
+      ])
+    }
+  }
+  // メイン処理
+  @main() {
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    // 結果表示用
+    let resultMfm = []
+    // ユーザーの情報を取得
+    let user = Mk:api("users/show", {
+      userId: input_text
+    })
+
+    match Core:type(user) {
+      "error" => {
+        resultMfm.push(`$[x4 :GoBack:]`)
+        Mk:dialog("エラー", [
+          `入力したIDに該当するユーザーは見つかりませんでした`
+          `$[x2 :sorehanai::mimi_hate:]`
+          `有効なアカウントのIDを入力してねー👋`
+        ].join(Str:lf), "error")
+      }
+      "obj" => {
+        // ユーザーのノートを取得
+        let notes = Mk:api("users/notes", {
+          userId: user.id
+          sinceDate: Date:parse(user.createdAt)
+          limit: 1
+        })
+
+        match Core:type(notes) {
+          "error" => {
+            resultMfm.push(`$[x4 :GoBack:]`)
+            Mk:dialog("エラー", [
+              `ノートが取得できませんでした`
+              `$[x2 :fushiginakotomoarumondesuna::mimi_hate:]`
+              `有効なアカウントのIDを入力してねー👋`
+            ].join(Str:lf), "error")
+          }
+          "arr" => {
+            if (notes.len > 0) {
+              let user_username = eval {
+                match user.host {
+                  null => { `@{user.username}` }
+                  * => { `@{user.username}@{user.host}` }
+                }
+              }
+              resultMfm.push([
+                `$[tada.speed=0s ノート内容]`
+                `>{notes[0].text}`
+                `$[unixtime {Date:parse(notes[0].createdAt) / 1000}]`
+                ``
+                `$[tada.speed=0s ノートへのリンク]`
+                `{SERVER_URL}/notes/{notes[0].id}`
+                ``
+                `<small>⚠️リモートユーザーの場合はうまく取得できない可能性があります</small>`
+              ].join(Str:lf))
+            } else {
+              resultMfm.push(`$[x4 :GoBack:]`)
+              Mk:dialog("エラー", [
+                `ノートが取得できませんでした`
+                `$[x2 :sonnannaiyo::mimi_hate:]`
+                `たくさんノートしてねー👋`
+              ].join(Str:lf), "error")
+            }
+          }
+        }
+      }
+    }
+    
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: resultMfm.join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:button({
+            text: "もう一度"
+            onClick: @() {
+              init()
+            }
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

@@ -1,0 +1,20 @@
+# 隠れおしり
+
+* TOC
+{:toc}
+
+## 内容
+カスタム絵文字【あさり】の中に隠れている【おしり】を探す  
+見つけたら優しくタップ❤️
+
+## Play URL
+
+https://msk.kitazawa.me/play/9qkik732ej
+
+## ソース
+
+[9qkik732ej.is](./../../src/kitazawa/9qkik732ej.is)
+
+----
+
+[サイトのトップ]({{ site.baseurl }})

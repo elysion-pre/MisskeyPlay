@@ -1,7 +1,7 @@
 /// @ 0.18.0
 // カスタム絵文字サークル
 // Copyright (c) 2024 @elysion
-// Released under the MIT license
+// This script is licensed under the MIT
 // https://opensource.org/licenses/mit-license.php
 
 let PLAY_NAME = "カスタム絵文字サークル"

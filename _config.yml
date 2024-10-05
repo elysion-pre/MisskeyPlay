@@ -1,0 +1,9 @@
+theme: jekyll-theme-Modernist
+title: MisskeyPlay
+description: MisskeyPlayソース置き場
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: true
+plugins:
+  - jekyll-seo-tag

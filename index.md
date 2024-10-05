@@ -64,3 +64,17 @@ Copyright (c) 2024 elysion
 - [○ルト○ルト](./page/kitazawa/9vudzmzjub.md)
 - [きたざわクリックアーン](./page/kitazawa/9w66sr0466.md)
 - [初めてのノート](./page/kitazawa/9x8aji5tu5.md)
+
+### misskey.stream
+デイリー
+- [今日のカスタム絵文字](./page/kitazawa/9te15jf7fe.md)
+- [今日のスパチャ](./page/kitazawa/9uis0l3gd12305xp.md)
+- [今日のStreamカード](./page/kitazawa/9wpztwa2xtf10ca7.md)
+
+それ以外
+- [Streamスロット](./page/kitazawa/9te0mbzqf3.md)
+- [Streamスロット(難)](./page/kitazawa/9uuq0pqprccq00tn.md)
+- [俺のｱﾂｱﾂの😚❤️KISS](./page/kitazawa/9ui0o7j7d12304zk.md)
+- [Stream俳句](./page/kitazawa/9uih9xbnd12305qd.md)
+- [気まぐれカスタム絵文字](./page/kitazawa/9uipd6yld12305wz.md)
+- [Streamカード](./page/kitazawa/9wpztb1yxtf10ca6.md)

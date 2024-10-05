@@ -1,4 +1,4 @@
-# STREAMスロット
+# Streamスロット
 
 * TOC
 {:toc}

@@ -1,0 +1,309 @@
+/// @ 0.18.0
+// 気まぐれカスタム絵文字
+// Copyright (c) 2024 @elysion
+// License: MIT License
+// https://github.com/elysion-pre/MisskeyPlay/blob/main/LICENSE
+
+let PLAY_NAME = "気まぐれカスタム絵文字"
+let TAG_NAME = "#RANDOM_EMOJI"
+let PLAY_URL = eval {
+  if exists THIS_URL THIS_URL
+  else {
+    match SERVER_URL {
+      "https://submarin.online" => { `{SERVER_URL}/play/9scukcuqsm` }
+      "https://msk.kitazawa.me" => { `{SERVER_URL}/play/9rzua8426v` }
+      "https://misskey.stream" => { `{SERVER_URL}/play/9uipd6yld12305wz` }
+      * => ""
+    }
+  }
+}
+
+let random = eval {
+  var id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「ユーザーID+ミリ秒」である乱数生成器を用意
+  Math:gen_rng(`{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+:: Arr {
+  // ランダムで配列の値を返す
+  // param: array<arr>
+  // return: <arr[0~(arr.len - 1)]>
+  @randomSelect(array) {
+    array[random(0, (array.len - 1))]
+  }
+  // 指定の配列を削除した配列を返す
+  // param: array<arr>
+  // param: index<num>
+  // return: <arr>
+  @splice(array, index) {
+    array.slice(0, index).concat(array.slice((index + 1), array.len))
+  }
+}
+
+:: Ui {
+  // 指定UIのhidden処理
+  // param: name<str>
+  // param: f<bool>
+  @hidden(name, f) {
+    Ui:get(name).update({
+      hidden: f
+    })
+  }
+  // 指定UIのdisabled処理
+  // param: name<str>
+  // param: f<bool>
+  @disabled(name, f) {
+    Ui:get(name).update({
+      disabled: f
+    })
+  }
+}
+
+// IGNORE_ENCODE_LIST
+let IGNORE_ENCODE_LIST = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567890-_.!~'()".to_utf8_byte_arr().sort(@(a, b) { (a - b) })
+
+@encodeURIComponent(str) {
+  let encode_text = []
+  let utf8_byte_arr = str.to_arr().map(@(v) {
+    v.to_utf8_byte_arr()
+  })
+  each (let utf8_bytes, utf8_byte_arr) {
+    if (utf8_bytes.len == 1) {
+      if (IGNORE_ENCODE_LIST.incl(utf8_bytes[0])) {
+        encode_text.push(Str:from_utf8_bytes(utf8_bytes))
+        continue
+      }
+    }
+    each (let utf8_byte, utf8_bytes) {
+      var hex = Num:to_hex(utf8_byte)
+      if (hex.len == 1) {
+        hex = `0{hex}`
+      }
+      encode_text.push(`%{hex}`)
+    }
+  }
+  encode_text.join()
+}
+
+let CHAR_HIRAGANA = [
+"あ", "い", "う", "え", "お"
+"か", "き", "く", "け", "こ"
+"さ", "し", "す", "せ", "そ"
+"た", "ち", "つ", "て", "と"
+"な", "に", "ぬ", "ね", "の"
+"は", "ひ", "ふ", "へ", "ほ"
+"ま", "み", "む", "め", "も"
+"や", "ゐ", "ゆ", "ゑ", "よ"
+"ら", "り", "る", "れ", "ろ"
+"わ", "を", "ん"
+"が", "ぎ", "ぐ", "げ", "ご"
+"ざ", "じ", "ず", "ぜ", "ぞ"
+"だ", "ぢ", "づ", "で", "ど"
+"ば", "び", "ぶ", "べ", "ぼ"
+"ぱ", "ぴ", "ぷ", "ぺ", "ぽ"
+"ぁ", "ぃ", "ぅ", "ぇ", "ぉ"
+"ゃ", "ゅ", "ょ"
+"きゃ", "きゅ", "きょ"
+"しゃ", "しゅ", "しょ"
+"ちゃ", "ちゅ", "ちょ"
+"にゃ", "にゅ", "にょ"
+"ひゃ", "ひゅ", "ひょ"
+"みゃ", "みゅ", "みょ"
+"りゃ", "りゅ", "りょ"
+"ぎゃ", "ぎゅ", "ぎょ"
+"じゃ", "じゅ", "じょ"
+"ぢゃ", "ぢゅ", "ぢょ"
+"びゃ", "びゅ", "びょ"
+"ぴゃ", "ぴゅ", "ぴょ"
+]
+
+let CHAR_KATAKANA = [
+"ア", "イ", "ウ", "エ", "オ"
+"カ", "キ", "ク", "ケ", "コ"
+"サ", "シ", "ス", "セ", "ソ"
+"タ", "チ", "ツ", "テ", "ト"
+"ナ", "ニ", "ヌ", "ネ", "ノ"
+"ハ", "ヒ", "フ", "ヘ", "ホ"
+"マ", "ミ", "ム", "メ", "モ"
+"ヤ", "ユ", "ヨ"
+"ラ", "リ", "ル", "レ", "ロ"
+"ワ", "ヲ", "ン"
+"ガ", "ギ", "グ", "ゲ", "ゴ"
+"ザ", "ジ", "ズ", "ゼ", "ゾ"
+"ダ", "ヂ", "ヅ", "デ", "ド"
+"バ", "ビ", "ブ", "ベ", "ボ"
+"パ", "ピ", "プ", "ペ", "ポ"
+"ァ", "ィ", "ゥ", "ェ", "ォ"
+"ャ", "ュ", "ョ"
+"キャ", "キュ", "キョ"
+"シャ", "シュ", "ショ"
+"チャ", "チュ", "チョ"
+"ニャ", "ニュ", "ニョ"
+"ヒャ", "ヒュ", "ヒョ"
+"ミャ", "ミュ", "ミョ"
+"リャ", "リュ", "リョ"
+"ギャ", "ギュ", "ギョ"
+"ジャ", "ジュ", "ジョ"
+"ヂャ", "ヂュ", "ヂョ"
+"ビャ", "ビュ", "ビョ"
+"ピャ", "ピュ", "ピョ"
+]
+
+@Game() {
+  var emoji = []
+
+  // 初期化
+  @init() {
+    Ui:get("hiraganaButton").update({
+      text: "再作成（かな）"
+      onClick: @() {
+        setKana("hiragana")
+      }
+      hidden: true
+    })
+    Ui:get("katakanaButton").update({
+      text: "再作成（カナ）"
+      onClick: @() {
+        setKana("katakana")
+      }
+      hidden: true
+    })
+    setKana("hiragana")
+  }
+  // 初期化
+  @setKana(type) {
+    emoji = []
+    for 2 {
+      match type {
+        "hiragana" => { emoji.push(Arr:randomSelect(CHAR_HIRAGANA)) }
+        "katakana" => { emoji.push(Arr:randomSelect(CHAR_KATAKANA)) }
+      }
+    }
+    // 3%の確率で長音符
+    let random_prolonged = random(0, 100)
+    match true {
+      (random_prolonged > 97) => {
+        emoji.pop()
+        emoji.push("ー")
+      }
+    }
+    main()
+  }
+  // メイン処理
+  @main() {
+    let emojis = [
+      emoji.join()
+      emoji.join()
+    ].join(Str:lf)
+
+    // テキストの色
+    let fg_col = eval {
+      var hex = Num:to_hex(random(0, 16777216))
+      let c = (6 - hex.len - 1)
+      if (c != 0) for c hex = `0{hex}`
+      hex
+    }
+    // 投稿用テキスト
+    let resultMfm = [
+      `$[x2 $[jelly $[fg.color={fg_col} **{emojis}**]]]`
+    ].join(Str:lf)
+
+    // テキストエンコード
+    let emoji_encoded = encodeURIComponent(emojis)
+
+    let emj_url = [
+      `https://emoji-gen.ninja/result?` 
+      `text={emoji_encoded}&`
+      `color={fg_col}FF&`
+      `back_color=00000000&`
+      `font=rounded-x-mplus-1p-black&`
+      `size_fixed=false&`
+      `align=center&`
+      `stretch=true&`
+      `public_flag=false&`
+      `locale=ja`
+    ].join()
+  
+    // 投稿用テキスト
+    let postText = [
+      `<center>`
+      resultMfm
+      TAG_NAME
+      PLAY_URL
+      `</center>`
+    ].join(Str:lf)
+
+    // UI更新処理
+    Ui:get("resultMfm").update({
+      text: resultMfm
+    })
+
+    Ui:get("postFormButton").update({
+      text: "投稿する"
+      form: {
+        text: postText
+      }
+      primary: true
+      rounded: true
+    })
+
+    Ui:get("infoMfm").update({
+      text: `[絵文字ジェネレーターで絵文字を作成（別サイト）]({emj_url})`
+    })
+
+    // UI表示・非表示
+    Ui:hidden("loading_area", true)
+    Ui:hidden("main_area", false)
+    Ui:hidden("post_area", false)
+    Ui:hidden("info_area", false)
+
+    Ui:disabled("hiraganaButton", false)
+    Ui:disabled("katakanaButton", false)
+  }
+  init()
+}
+
+Ui:render([
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 {PLAY_NAME}]`
+      }, "titleMfm")
+    ]
+    align: "center"
+  }, "title_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({
+        text: `$[x2 $[bounce Now Loading...]]`
+      }, "loadingMfm")
+    ]
+    align: "center"
+  } "loading_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "resultMfm")
+    ]
+    align: "center"
+    hidden: true
+  }, "main_area")
+  Ui:C:container({
+    children: [
+      Ui:C:button({}, "hiraganaButton")
+      Ui:C:button({}, "katakanaButton")
+      Ui:C:postFormButton({} "postFormButton")
+    ]
+    align: "center"
+    hidden: true
+  } "post_area")
+  Ui:C:container({
+    children: [
+      Ui:C:mfm({}, "infoMfm")
+    ]
+    align: "center"
+    hidden: true
+  }, "info_area")
+])
+Game()

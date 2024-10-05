@@ -39,7 +39,7 @@ https://msk.kitazawa.me/play/9oi9xawja0
 
 ## ソース
 
-[9oi9xawja0.is](./../src/kitazawa/9oi9xawja0.is)
+[9oi9xawja0.is](./../../src/kitazawa/9oi9xawja0.is)
 
 ----
 

@@ -8,7 +8,8 @@
 ソースの導入は自己責任でお願いします。
 
 ### License
-[MIT License](LICENCE)
+Copyright (c) 2024 elysion  
+[MIT License](LICENSE)
 
 ## Play一覧
 

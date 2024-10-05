@@ -23,7 +23,7 @@ https://misskey.stream/play/9wpztb1yxtf10ca6
 
 ## ソース
 
-[9wpztb1yxtf10ca6.is](./../../src/submarin/9wpztb1yxtf10ca6.is)
+[9wpztb1yxtf10ca6.is](./../../src/stream/9wpztb1yxtf10ca6.is)
 
 ----
 

@@ -17,7 +17,7 @@ https://msk.kitazawa.me/play/9rtawsjc34
 
 ## ソース
 
-[9rtawsjc34.is](./../src/kitazawa/9rtawsjc34.is)
+[9rtawsjc34.is](./../../src/kitazawa/9rtawsjc34.is)
 
 ----
 

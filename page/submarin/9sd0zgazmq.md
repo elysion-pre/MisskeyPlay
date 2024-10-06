@@ -28,16 +28,16 @@
 
 > [!WARNING]
 > 俳句データはpagesにあるデータから読み込んでいます
-> https://submarin.online/@elysion/pages/haiku_data
+> [https://submarin.online/@elysion/pages/haiku_data](https://submarin.online/@elysion/pages/haiku_data)
 
 
 ## Play URL
 
-https://submarin.online/play/9sd0zgazmq
+[https://submarin.online/play/9sd0zgazmq](https://submarin.online/play/9sd0zgazmq)
 
 ## ソース
 
-[9sd0zgazmq.is](./../../src/submarin/9sd0zgazmq.is)
+[9sd0zgazmq.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/submarin/9sd0zgazmq.is)
 
 ----
 

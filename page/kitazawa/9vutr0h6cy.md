@@ -22,15 +22,15 @@
 
 > [!WARNING]
 > 除外する絵文字のカテゴリをpagesにあるデータから読み込んでいます
-> https://msk.kitazawa.me/@elysion/pages/ignore_emoji_data
+> [https://msk.kitazawa.me/@elysion/pages/ignore_emoji_data](https://msk.kitazawa.me/@elysion/pages/ignore_emoji_data)
 
 ## Play URL
 
-https://msk.kitazawa.me/play/9vutr0h6cy
+[https://msk.kitazawa.me/play/9vutr0h6cy](https://msk.kitazawa.me/play/9vutr0h6cy)
 
 ## ソース
 
-[9vutr0h6cy.is](./../../src/kitazawa/9vutr0h6cy.is)
+[9vutr0h6cy.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/kitazawa/9vutr0h6cy.is)
 
 ----
 

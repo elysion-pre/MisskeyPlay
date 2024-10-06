@@ -12,11 +12,11 @@
 
 ## Play URL
 
-https://msk.kitazawa.me/play/9x8aji5tu5
+[https://msk.kitazawa.me/play/9x8aji5tu5](https://msk.kitazawa.me/play/9x8aji5tu5)
 
 ## ソース
 
-[9x8aji5tu5.is](./../../src/kitazawa/9x8aji5tu5.is)
+[9x8aji5tu5.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/kitazawa/9x8aji5tu5.is)
 
 ----
 

@@ -64,6 +64,7 @@ Copyright (c) 2024 elysion
 - [○ルト○ルト](./page/kitazawa/9vudzmzjub.md)
 - [きたざわクリックアーン](./page/kitazawa/9w66sr0466.md)
 - [初めてのノート](./page/kitazawa/9x8aji5tu5.md)
+- [もらったリアクション](./page/kitazawa/9x8uvz3gb6.md)
 
 ### misskey.stream
 デイリー

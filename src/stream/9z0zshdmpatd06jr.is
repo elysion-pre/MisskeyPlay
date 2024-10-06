@@ -9,7 +9,7 @@
 // オプションとして『すべてのノートを対象』を選択した場合、かなり時間が必要になります。
 // 5万ノート以上は未検証。自己責任で。
 
-let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/`
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9z0zshdmpatd06jr`
 let PLAY_TAG = "#もらったリアクション"
 
 // ユーザーデータ

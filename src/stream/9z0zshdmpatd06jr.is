@@ -1,0 +1,545 @@
+/// @ 0.19.0
+// もらったリアクション
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+// description: 
+// 他サーバーから送られたカスタム絵文字は除外されます
+// オプションとして『すべてのノートを対象』を選択した場合、かなり時間が必要になります。
+// 5万ノート以上は未検証。自己責任で。
+
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/`
+let PLAY_TAG = "#もらったリアクション"
+
+// ユーザーデータ
+// param: id<str>
+@User(id) {
+  let this = {
+    // コンストラクタ
+    // param: id<str>
+    constructor: @(id) {
+      this.user = Mk:api("users/show", {
+        userId: id
+      })
+      this
+    }
+    // 名前取得
+    // nameが未入力ならusernameを返す
+    // return: <str>
+    getName: @() { if this.user.name == null return this.user.username else return this.user.name }
+    // メンション名取得(@username@host)
+    // return: <str>
+    getMentionName: @() {
+      match this.user.host {
+        null => { return `@{this.user.username}` }
+        * => { return `@{this.user.username}@{this.user.host}` }
+      }
+    }
+    // プロフィールURL取得
+    // return: <str>
+    getProfileURL: @() {
+      match this.host {
+        null => { return `{SERVER_URL}/@{this.user.username}` }
+        * => { return `https://{this.user.host}/@{this.user.username}` }
+      }
+    }
+    // ノート数取得
+    // return: <num>
+    getNotesCount: @() { this.user.notesCount }
+    // ノート取得
+    // param: limit<num>
+    // return: <arr>
+    getNotes: @(limit) {
+      let func = @(limit, params) {
+        if (params.limit <= 0) {
+          return []
+        }
+        let notes = Mk:api("users/notes", params)
+        if (notes.len < params.limit) {
+          return notes
+        }
+        limit -= params.limit
+        return notes.concat(func(limit, {
+          userId: this.user.id,
+          withChannelNotes: params.withChannelNotes,
+          limit: Math:min(limit, 100),
+          untilId: notes[notes.len - 1].id
+        }))
+      }
+      return func(limit, {
+        userId: this.user.id,
+        withChannelNotes: true,
+        limit: Math:min(limit, 100)
+      })
+    }
+    // 今日のノート取得
+    // param: limit<num>
+    // return: <arr>
+    getTodayNotes: @() {
+      var notes = Mk:api("users/notes", {
+        userId: this.user.id,
+        withChannelNotes: true,
+        limit: 100
+      }).filter(@(i) {
+        Date:year(Date:parse(i.createdAt)) == Date:year(Date:now()) && Date:month(Date:parse(i.createdAt)) == Date:month(Date:now()) && Date:day(Date:parse(i.createdAt)) == Date:day(Date:now())
+      })
+      if (notes.len < 100) return notes
+
+      loop {
+        let add_notes = Mk:api("users/notes", {
+          userId: this.user.id,
+          withChannelNotes: true,
+          limit: 100,
+          untilId: notes[notes.len - 1].id
+        }).filter(@(i) {
+          Date:year(Date:parse(i.createdAt)) == Date:year(Date:now()) && Date:month(Date:parse(i.createdAt)) == Date:month(Date:now()) && Date:day(Date:parse(i.createdAt)) == Date:day(Date:now())
+        })
+        notes = notes.concat(add_notes)
+        if add_notes.len < 100 break
+      }
+      notes
+    }
+    // idが自分かどうか
+    // param: id<str>
+    // return: <bool>
+    isYourself: @(id) { if this.user.id == id return true else return false }
+  }
+  this.constructor(id)
+}
+
+@Game() {
+  // ユーザーデータ
+  var user = null
+  // リアクションリスト
+  var reaction_list = null
+  // リアクション検索フラグ
+  var fSearchAll = false
+  // リアクション表示モード
+  // 0: 両方
+  // 1: カスタム絵文字のみ
+  // 2: 絵文字のみ
+  var reaction_disp_mode = 0
+
+  // 初期化
+  @init() {
+    if (USER_ID == null) {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: `$[x4 :nanashi_warui:]`
+            })
+          ]
+          align: "center"
+        })
+      ])
+      Mk:dialog("エラー", [
+        `ユーザーIDが見つかりませんでした`
+        `$[x2 :nanashi_warui::stream:]`
+        `ログインしてから遊んでみてねー👋`
+      ].join(Str:lf), "error")
+    } else {
+      user = User(USER_ID)
+//<:`user: {user}`
+      exec()
+    }
+  }
+  // リアクションの合計値を計算
+  // param: reaction_data<arr>
+  // return: <obj>
+  @calcTotalReactions(reaction_data) {
+    // 合計値を持つオブジェクトの作成
+    let result = reaction_data.reduce(@(a, obj, i) {
+      Obj:kvs(obj).reduce(@(a2, entry, i2) {
+        let key = entry[0]
+        let value = entry[1]
+        if Obj:has(a2, key) {
+          // キーが存在する場合は値を更新
+          Obj:set(a2, key, Obj:get(a2, key) + value)
+        } else {
+          // キーが存在しない場合は新しいキーと値を追加
+          Obj:set(a2, key, value)
+        }
+        return a2
+      }, a)
+      return a
+    }, {})
+
+    // 結果をキーと値のペアのリストに変換し、値が多い順にソート
+    let entries = Obj:kvs(result).sort(@(a, b) {
+      (b[1] - a[1])
+    })
+
+    // ソート済みのエントリを新しいオブジェクトに戻す
+    let s_result = {}
+    each (let entry, entries) {
+      Obj:set(s_result, entry[0], entry[1])
+    }
+
+    return s_result
+  }
+  // 実行
+  @exec() {
+    let info_text = if fSearchAll `全て` else `今日`
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `{info_text}のノートへのリアクションを取得中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+              `<small>⚠️他サーバーから送られたのカスタム絵文字は除外</small>`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    // リアクションがあるノートのリアクションを取得
+    let notes_reactions = eval {
+      if fSearchAll {
+        user.getNotes(user.getNotesCount()).filter(@(i) {
+          i.reactionCount > 0
+        }).map(@(v) {
+          v.reactions
+        })
+      } else {
+        user.getTodayNotes().filter(@(i) {
+          i.reactionCount > 0
+        }).map(@(v) {
+          v.reactions
+        })
+      }
+    }
+//<:`notes_reactions: {notes_reactions}`
+
+    let reaction_notes_count = notes_reactions.len
+
+    if reaction_notes_count == 0 {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: `$[x4 :nanashi_warui:]`
+            })
+          ]
+          align: "center"
+        })
+      ])
+      Mk:dialog("エラー", [
+        `リアクションがあるノートが見つかりませんでした`
+        `$[x2 :nanashi_warui::stream:]`
+        `リアクションもらえるといいね！`
+      ].join(Str:lf), "error")
+    } else {
+
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: [
+                `$[x2 Now Loading]`
+                `リアクションの合計値を計算中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+                `<small>{reaction_notes_count}件のノートを対象に集計を行っています</small>`
+              ].join(Str:lf)
+            })
+          ]
+          align: "center"
+        })
+      ])
+
+      // リアクションの数を合計する
+      reaction_list = calcTotalReactions(notes_reactions)
+//<:`reaction_list: {reaction_list}`
+
+      main()
+    }
+  }
+  // メイン処理
+  @main() {
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `結果描画中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    let results = eval {
+      match reaction_disp_mode {
+        // カスタム絵文字のみにする
+        1 => {
+          Obj:kvs(reaction_list).filter(@(i) {
+            i[0].index_of("@.:") != -1 && i[0].index_of("@") != -1
+          }).map(@(v) {
+            [ v[0].replace("@.:", ":"), v[1] ]
+          })
+        }
+        // 絵文字のみにする
+        2 => {
+          Obj:kvs(reaction_list).filter(@(i) {
+            i[0].index_of(":") == -1
+          })
+        }
+        * => {
+          Obj:kvs(reaction_list).filter(@(i) {
+            i[0].index_of(":") == -1 || (i[0].index_of("@.:") != -1 && i[0].index_of("@") != -1)
+          }).map(@(v) {
+            [ v[0].replace("@.:", ":"), v[1] ]
+          })
+        }
+      }
+    }
+//<:`results: {results}`
+
+    let data_all = results.map(@(v) {
+      `{v[0]}: {v[1]}`
+    })
+    // オブジェクト内のすべての数値の合計値
+    let data_all_count = results.reduce(@(a, v, i) {
+      if Core:type(v[1]) == "num" return a + v[1]
+      return a
+    }, 0)
+
+// 10
+    let data10 = results.slice(0, 10).map(@(v) {
+      `{v[0]}: {v[1]}`
+    })
+    let data10_count = results.reduce(@(a, v, i) {
+      if Core:type(v[1]) == "num" && i < 10 return a + v[1]
+      return a
+    }, 0)
+
+// 50
+    let data50 = results.slice(0, 50).map(@(v) {
+      `{v[0]}: {v[1]}`
+    })
+    let data50_count = results.reduce(@(a, v, i) {
+      if Core:type(v[1]) == "num" && i < 50 return a + v[1]
+      return a
+    }, 0)
+
+// 100
+    let data100 = results.slice(0, 100).map(@(v) {
+      `{v[0]}: {v[1]}`
+    })
+    let data100_count = results.reduce(@(a, v, i) {
+      if Core:type(v[1]) == "num" && i < 100 return a + v[1]
+      return a
+    }, 0)
+
+    let info_text = if fSearchAll `今まで` else `今日`
+
+    // 結果表示用
+    let resultMfm = [
+      `{user.getName()}の`
+      `{info_text}もらったリアクションは`
+      `総数: {data_all_count}`
+      `種類: {data_all.len}`
+      data_all.join(", ")
+    ].join(Str:lf)
+
+    // 投稿用テキスト
+    let postText = [
+      `{info_text}もらったリアクションは`
+      `総数: {data_all_count}`
+      `種類: {data_all.len}`
+      data_all.join(", ")
+    ].join(Str:lf)
+
+// 10
+    let postText10 = [
+      `{info_text}もらったリアクションは`
+      `総数: {data_all_count}`
+      `種類: {data10.len}`
+      data10.join(", ")
+    ]
+    if data_all.len > 10 postText10.push(`<small>⚠️上位10種まで表示</small>`)
+
+// 50
+    let postText50 = [
+      `{info_text}もらったリアクションは`
+      `総数: {data_all_count}`
+      `種類: {data50.len}`
+      data50.join(", ")
+    ]
+    if data_all.len > 50 postText50.push(`<small>⚠️上位50種まで表示</small>`)
+
+// 100
+    let postText100 = [
+      `{info_text}もらったリアクションは`
+      `総数: {data_all_count}`
+      `種類: {data_all.len}`
+      data100.join(", ")
+    ]
+    if data_all.len > 100 postText100.push(`<small>⚠️上位100種まで表示</small>`)
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              resultMfm
+            ].join(Str:lf)
+          })
+          Ui:C:button({
+            text: "もう一度"
+            onClick: @() {
+              reaction_disp_mode = 0
+              fSearchAll = false
+              exec()
+            }
+          })
+          Ui:C:postFormButton({
+            text: "投稿する"
+            form: {
+              text: [
+                `<center>`
+                postText
+                PLAY_URL
+                PLAY_TAG
+                `</center>`
+              ].join(Str:lf)
+            }
+            primary: true
+            rounded: true
+          })
+          Ui:C:mfm({
+            text: "<small>⚠️文字数オーバーしている場合は下部にある投稿オプションをご利用ください</small>"
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:folder({
+            children: [
+              Ui:C:container({
+                children: [
+                  Ui:C:postFormButton({
+                    text: "投稿する(上位10種まで)"
+                    form: {
+                      text: [
+                        `<center>`
+                        postText10.join(Str:lf)
+                        PLAY_URL
+                        PLAY_TAG
+                        `</center>`
+                      ].join(Str:lf)
+                    }
+                    primary: true
+                    rounded: true
+                  })
+                  Ui:C:postFormButton({
+                    text: "投稿する(上位50種まで)"
+                    form: {
+                      text: [
+                        `<center>`
+                        postText50.join(Str:lf)
+                        PLAY_URL
+                        PLAY_TAG
+                        `</center>`
+                      ].join(Str:lf)
+                    }
+                    primary: true
+                    rounded: true
+                  })
+                  Ui:C:postFormButton({
+                    text: "投稿する(上位100種まで)"
+                    form: {
+                      text: [
+                        `<center>`
+                        postText100.join(Str:lf)
+                        PLAY_URL
+                        PLAY_TAG
+                        `</center>`
+                      ].join(Str:lf)
+                    }
+                    primary: true
+                    rounded: true
+                  })
+                ]
+              })
+            ]
+            title: "投稿オプション"
+            opened: true
+          })
+          Ui:C:folder({
+            children: [
+              Ui:C:container({
+                children: [
+                  Ui:C:button({
+                    onClick: @() {
+                      reaction_disp_mode = 1
+                      main()
+                    }
+                    text: "カスタム絵文字のみを表示"
+                  })
+                  Ui:C:button({
+                    onClick: @() {
+                      reaction_disp_mode = 2
+                      main()
+                    }
+                    text: "絵文字のみを表示"
+                  })
+                  Ui:C:button({
+                    onClick: @() {
+                      reaction_disp_mode = 0
+                      main()
+                    }
+                    text: "両方を表示"
+                  })
+                ]
+                padding: 5
+              })
+            ]
+            title: "リアクション表示設定"
+            opened: true
+          })
+          Ui:C:folder({
+            children: [
+              Ui:C:container({
+                children: [
+                  Ui:C:button({
+                    text: "もう一度(全てのノートを対象)"
+                    onClick: @() {
+                      reaction_disp_mode = 0
+                      fSearchAll = true
+                      exec()
+                    }
+                    primary: true
+                  })
+                  Ui:C:mfm({
+                    text: [
+                      "<small>⚠️ノート数に応じて読み込みに時間が必要になります。"
+                      "エラーが出るかもしれません。自己責任で。</small>"
+                    ].join(Str:lf)
+                  })
+                ]
+                padding: 5
+              })
+            ]
+            title: "おまけ"
+            opened: true
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

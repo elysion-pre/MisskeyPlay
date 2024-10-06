@@ -28,6 +28,7 @@ Copyright (c) 2024 elysion
 - [あんにんやガチャ](./page/submarin/9seoknmtqm.md)
 - [初めてのノート](./page/submarin/9v6obzef07.md)
 - [さんまぶりカード](./page/submarin/9wpzr2j1d5.md)
+- [もらったリアクション](./page/submarin/9z0z43izkk.md)
 
 ### msk.kitazawa.me
 デイリー
@@ -79,3 +80,5 @@ Copyright (c) 2024 elysion
 - [Stream俳句](./page/stream/9uih9xbnd12305qd.md)
 - [気まぐれカスタム絵文字](./page/stream/9uipd6yld12305wz.md)
 - [Streamカード](./page/stream/9wpztb1yxtf10ca6.md)
+- [もらったリアクション](./page/stream/9z0zshdmpatd06jr.md)
+

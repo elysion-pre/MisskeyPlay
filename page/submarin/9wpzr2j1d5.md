@@ -15,15 +15,15 @@
 
 > [!WARNING]
 > 除外する絵文字のカテゴリをpagesにあるデータから読み込んでいます
-> https://submarin.online/@elysion/pages/ignore_emoji_data
+> [https://submarin.online/@elysion/pages/ignore_emoji_data](https://submarin.online/@elysion/pages/ignore_emoji_data)
 
 ## Play URL
 
-https://submarin.online/play/9wpzr2j1d5
+[https://submarin.online/play/9wpzr2j1d5](https://submarin.online/play/9wpzr2j1d5)
 
 ## ソース
 
-[9wpzr2j1d5.is](./../../src/submarin/9wpzr2j1d5.is)
+[9wpzr2j1d5.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/submarin/9wpzr2j1d5.is)
 
 ----
 

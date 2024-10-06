@@ -10,11 +10,11 @@
 
 ## Play URL
 
-https://misskey.stream/play/9uipd6yld12305wz
+[https://misskey.stream/play/9uipd6yld12305wz](https://misskey.stream/play/9uipd6yld12305wz)
 
 ## ソース
 
-[9uipd6yld12305wz.is](./../../src/stream/9uipd6yld12305wz.is)
+[9uipd6yld12305wz.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/stream/9uipd6yld12305wz.is)
 
 ----
 

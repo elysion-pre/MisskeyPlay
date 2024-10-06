@@ -10,8 +10,9 @@
 > 5音部分  
 > 重み付きリストを使用  
 > - 95%で5音
-> - 3%で6音
+> - 2%で6音
 > - 2%で7音
+> - 1%で8音
 
 > [!NOTE]
 > 7音部分  
@@ -30,16 +31,16 @@
 
 > [!WARNING]
 > 俳句データはpagesにあるデータから読み込んでいます
-> https://msk.kitazawa.me/@elysion/pages/haiku_data
+> [https://msk.kitazawa.me/@elysion/pages/haiku_data](https://msk.kitazawa.me/@elysion/pages/haiku_data)
 
 
 ## Play URL
 
-https://msk.kitazawa.me/play/9oi9xawja0
+[https://msk.kitazawa.me/play/9oi9xawja0](https://msk.kitazawa.me/play/9oi9xawja0)
 
 ## ソース
 
-[9oi9xawja0.is](./../../src/kitazawa/9oi9xawja0.is)
+[9oi9xawja0.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/kitazawa/9oi9xawja0.is)
 
 ----
 

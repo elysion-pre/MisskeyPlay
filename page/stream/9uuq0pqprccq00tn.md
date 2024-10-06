@@ -9,16 +9,16 @@
 
 > [!WARNING]
 > 除外する絵文字のカテゴリをpagesにあるデータから読み込んでいます
-> https://misskey.stream/@elysion/pages/ignore_emoji_data
+> [https://misskey.stream/@elysion/pages/ignore_emoji_data](https://misskey.stream/@elysion/pages/ignore_emoji_data)
 
 
 ## Play URL
 
-https://misskey.stream/play/9uuq0pqprccq00tn
+[https://misskey.stream/play/9uuq0pqprccq00tn](https://misskey.stream/play/9uuq0pqprccq00tn)
 
 ## ソース
 
-[9uuq0pqprccq00tn.is](./../../src/stream/9uuq0pqprccq00tn.is)
+[9uuq0pqprccq00tn.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/stream/9uuq0pqprccq00tn.is)
 
 ----
 

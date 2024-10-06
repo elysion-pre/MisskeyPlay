@@ -1,15 +1,15 @@
 ## MisskeyPlayソース置き場
 
 ### 質問・要望など
-https://submarin.online/@elysion
-https://msk.kitazawa.me/@elysion
+[https://submarin.online/@elysion](https://submarin.online/@elysion)
+[https://msk.kitazawa.me/@elysion](https://msk.kitazawa.me/@elysion)
 
 ### 免責
 ソースの導入は自己責任でお願いします。
 
 ### License
 Copyright (c) 2024 elysion  
-[MIT License](./LICENSE)
+[Released under the MIT license](https://github.com/elysion-pre/MisskeyPlay/blob/main/LICENSE)
 
 ## Play一覧
 
@@ -64,6 +64,7 @@ Copyright (c) 2024 elysion
 - [○ルト○ルト](./page/kitazawa/9vudzmzjub.md)
 - [きたざわクリックアーン](./page/kitazawa/9w66sr0466.md)
 - [初めてのノート](./page/kitazawa/9x8aji5tu5.md)
+- [もらったリアクション](./page/kitazawa/9x8uvz3gb6.md)
 
 ### misskey.stream
 デイリー

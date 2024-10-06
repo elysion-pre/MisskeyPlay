@@ -10,11 +10,11 @@
 
 ## Play URL
 
-https://submarin.online/play/9scukcuqsm
+[https://submarin.online/play/9scukcuqsm](https://submarin.online/play/9scukcuqsm)
 
 ## ソース
 
-[9scukcuqsm.is](./../../src/submarin/9scukcuqsm.is)
+[9scukcuqsm.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/submarin/9scukcuqsm.is)
 
 ----
 

@@ -10,11 +10,11 @@ min: 2, max: 20
 
 ## Play URL
 
-https://msk.kitazawa.me/play/9sk84yujhh
+[https://msk.kitazawa.me/play/9sk84yujhh](https://msk.kitazawa.me/play/9sk84yujhh)
 
 ## ソース
 
-[9sk84yujhh.is](./../../src/kitazawa/9sk84yujhh.is)
+[9sk84yujhh.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/kitazawa/9sk84yujhh.is)
 
 ----
 

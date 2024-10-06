@@ -28,16 +28,16 @@
 
 > [!WARNING]
 > 俳句データはpagesにあるデータから読み込んでいます
-> https://misskey.stream/@elysion/pages/haiku_data
+> [https://misskey.stream/@elysion/pages/haiku_data](https://misskey.stream/@elysion/pages/haiku_data)
 
 
 ## Play URL
 
-https://misskey.stream/play/9uih9xbnd12305qd
+[https://misskey.stream/play/9uih9xbnd12305qd](https://misskey.stream/play/9uih9xbnd12305qd)
 
 ## ソース
 
-[9uih9xbnd12305qd.is](./../../src/stream/9uih9xbnd12305qd.is)
+[9uih9xbnd12305qd.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/stream/9uih9xbnd12305qd.is)
 
 ----
 

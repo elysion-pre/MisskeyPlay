@@ -219,20 +219,60 @@ let PLAY_TAG = "#もらったリアクション"
     let reaction_notes_count = notes_reactions.len
 
     if reaction_notes_count == 0 {
+      // 結果表示用
+      let resultMfm = [
+        `{user.getName()}の`
+        `今日もらったリアクションはありませんでした。`
+      ].join(Str:lf)
+      
       render([
         Ui:C:container({
           children: [
             Ui:C:mfm({
-              text: `$[x4 :GoBack:]`
+              text: [
+                resultMfm
+              ].join(Str:lf)
+            })
+          ]
+          align: "center"
+        })
+        Ui:C:container({
+          children: [
+            Ui:C:folder({
+              children: [
+                Ui:C:container({
+                  children: [
+                    Ui:C:button({
+                      text: "もう一度(全てのノートを対象)"
+                      onClick: @() {
+                        reaction_disp_mode = 0
+                        fSearchAll = true
+                        exec()
+                      }
+                      primary: true
+                    })
+                    Ui:C:mfm({
+                      text: [
+                        "<small>⚠️ノート数に応じて読み込みに時間が必要になります。"
+                        "エラーが出るかもしれません。自己責任で。</small>"
+                      ].join(Str:lf)
+                    })
+                  ]
+                  padding: 5
+                })
+              ]
+              title: "おまけ"
+              opened: true
             })
           ]
           align: "center"
         })
       ])
+
       Mk:dialog("エラー", [
-        `リアクションがあるノートが見つかりませんでした`
+        `今日のノートが見つかりませんでした`
         `$[x2 :kanashiiyo::mimi_hate:]`
-        `リアクションもらえるといいね！`
+        `投稿してリアクションもらえるといいね！`
       ].join(Str:lf), "error")
     } else {
 

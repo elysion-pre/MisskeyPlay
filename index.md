@@ -9,7 +9,7 @@
 
 ### License
 Copyright (c) 2024 elysion  
-[Released under the MIT license](https://github.com/elysion-pre/MisskeyPlugins/blob/main/LICENSE)
+[Released under the MIT license](https://github.com/elysion-pre/MisskeyPlay/blob/main/LICENSE)
 
 ## Play一覧
 

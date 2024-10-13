@@ -1,0 +1,397 @@
+/// @ 0.19.0
+// ログイン日数
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+// description:
+// アクセストークンの取得に関して
+// 下記公式のドキュメントを参照
+// https://misskey-hub.net/ja/docs/for-developers/api/token/
+
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9z9ow5wnyo`
+let PLAY_TAG = "#ログイン日数"
+
+// ユーザーデータ
+// param: id<str>
+@User(id, token) {
+  let this = {
+    // コンストラクタ
+    // param: id<str>
+    constructor: @(id, token) {
+      this.user = Mk:api("users/show", {
+        userId: id
+      }, token)
+      this
+    }
+    // 名前取得
+    // nameが未入力ならusernameを返す
+    // return: <str>
+    getName: @() { if this.user.name == null return this.user.username else return this.user.name }
+    // メンション名取得(@username@host)
+    // return: <str>
+    getMentionName: @() {
+      match this.user.host {
+        null => { return `@{this.user.username}` }
+        * => { return `@{this.user.username}@{this.user.host}` }
+      }
+    }
+    // プロフィールURL取得
+    // return: <str>
+    getProfileURL: @() {
+      match this.host {
+        null => { return `{SERVER_URL}/@{this.user.username}` }
+        * => { return `https://{this.user.host}/@{this.user.username}` }
+      }
+    }
+    // ノート数取得
+    // return: <num>
+    getNotesCount: @() { this.user.notesCount }
+    // ノート取得
+    // param: limit<num>
+    // return: <arr>
+    getNotes: @(limit) {
+      let func = @(limit, params) {
+        if (params.limit <= 0) {
+          return []
+        }
+        let notes = Mk:api("users/notes", params)
+        if (notes.len < params.limit) {
+          return notes
+        }
+        limit -= params.limit
+        return notes.concat(func(limit, {
+          userId: this.user.id,
+          withChannelNotes: params.withChannelNotes,
+          limit: Math:min(limit, 100),
+          untilId: notes[notes.len - 1].id
+        }))
+      }
+      return func(limit, {
+        userId: this.user.id,
+        withChannelNotes: true,
+        limit: Math:min(limit, 100)
+      })
+    }
+    // 今日のノート取得
+    // param: limit<num>
+    // return: <arr>
+    getTodayNotes: @() {
+      var notes = Mk:api("users/notes", {
+        userId: this.user.id,
+        withChannelNotes: true,
+        limit: 100
+      }).filter(@(i) {
+        Date:year(Date:parse(i.createdAt)) == Date:year(Date:now()) && Date:month(Date:parse(i.createdAt)) == Date:month(Date:now()) && Date:day(Date:parse(i.createdAt)) == Date:day(Date:now())
+      })
+      if (notes.len < 100) return notes
+
+      loop {
+        let add_notes = Mk:api("users/notes", {
+          userId: this.user.id,
+          withChannelNotes: true,
+          limit: 100,
+          untilId: notes[notes.len - 1].id
+        }).filter(@(i) {
+          Date:year(Date:parse(i.createdAt)) == Date:year(Date:now()) && Date:month(Date:parse(i.createdAt)) == Date:month(Date:now()) && Date:day(Date:parse(i.createdAt)) == Date:day(Date:now())
+        })
+        notes = notes.concat(add_notes)
+        if add_notes.len < 100 break
+      }
+      notes
+    }
+    // idが自分かどうか
+    // param: id<str>
+    // return: <bool>
+    isYourself: @(id) { if this.user.id == id return true else return false }
+  }
+  this.constructor(id, token)
+}
+
+@Game() {
+  // ユーザーデータ
+  var user = null
+  // トークン
+  var token = null
+
+  // 初期化
+  @init() {
+    if (USER_ID == null) {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: `$[x4 :GoBack:]`
+            })
+          ]
+          align: "center"
+        })
+      ])
+      Mk:dialog("エラー", [
+        `ユーザーIDが見つかりませんでした`
+        `$[x2 :fushiginakotomoarumondesuna::mimi_hate:]`
+        `ログインしてから遊んでみてねー👋`
+      ].join(Str:lf), "error")
+    } else {
+      token_check()
+    }
+  }
+  // トークン確認
+  @token_check() {
+    token = Mk:load(`@{USER_ID}/token`)
+//<:`token: {token}`
+    if (token != null && token != "") {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:button({
+              text: `アクセストークンを削除`
+              onClick: @() {
+                Mk:save(`@{USER_ID}/token`, null)
+                Mk:dialog("完了", [
+                  `アクセストークンを削除しました`
+                  `$[x2 :orenitehakaizumi::mimi_hate:]`
+                ].join(Str:lf), "success")
+                token_check()
+              }
+            })
+            Ui:C:button({
+              text: `実行する`
+              onClick: @() {
+                user = User(USER_ID, token)
+//<:`user: {user}`
+                if Core:type(user.user) == "error" {
+                  match Obj:get(user.user.info, "code") {
+                    "FAILED_TO_RESOLVE_REMOTE_USER" =>{
+                      Mk:dialog("エラー", [
+                        `リモートユーザーの解決に失敗しました`
+                        `$[x2 :sonnannaiyo::mimi_hate:]`
+                      ].join(Str:lf), "error")
+                    }
+                    "CREDENTIAL_REQUIRED" =>{
+                      Mk:dialog("エラー", [
+                        `資格情報が必要です`
+                        `$[x2 :sonnannaiyo::mimi_hate:]`
+                      ].join(Str:lf), "error")
+                    }
+                    "AUTHENTICATION_FAILED" =>{
+                      Mk:dialog("エラー", [
+                        `認証に失敗しました。`
+                        `$[x2 :chotochau::mimi_hate:]`
+                        `トークンが正しいことを確認してください`
+                      ].join(Str:lf), "error")
+                    }
+                    * =>{
+                      Mk:dialog("エラー", [
+                        `予期せぬエラーが発生しました`
+                        `$[x2 :dekimasen::mimi_hate:]`
+                      ].join(Str:lf), "error")
+                    }
+                  }
+                  token_check()
+                } else {
+                  exec()
+                }
+              }
+              primary: true
+            })
+          ]
+          align: "center"
+        })
+        Ui:C:container({
+          children: [
+            Ui:C:folder({
+              children: [
+                Ui:C:mfm({
+                  text: [
+                    `1.アクセストークンを削除`
+                    `　本Playの【アクセストークンを削除】ボタンを押下`
+                    `2.[設定->API]({SERVER_URL}/settings/api)`
+                    `　【アクセストークンの管理】ボタンを押下`
+                    `3.削除`
+                    `　作成したアクセストークンを【🗑️(ゴミ箱)】ボタンを押下し、削除完了`
+                  ].join(Str:lf)
+                })
+              ]
+              title: "アクセストークンの削除手順"
+              opened: true
+            })
+          ]
+          bgColor: "#ba8b55" // 背景色
+          borderColor: "#000" // 枠の色
+          borderStyle: "dashed" // 枠の柄
+          padding: 2 // 余白幅
+          rounded: true // 角を丸く
+        })
+      ])
+    } else {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:textInput({
+              onInput: @(text) {
+                token = text
+              }
+              default: ""
+              label: "アクセストークンを入力してください"
+            })
+            Ui:C:button({
+              text: `アクセストークンを保存`
+              onClick: @() {
+                if (token != null && token != "") {
+                  Mk:save(`@{USER_ID}/token`, token)
+                  Mk:dialog("完了", [
+                    `アクセストークンを保存しました`
+                    `$[x2 :orenitekaishuzumi::mimi_heart:]`
+                    `<small>⚠️アクセストークンは他人に知られないようにしてください</small>`
+                  ].join(Str:lf), "success")
+                  token_check()
+                }
+              }
+            })
+          ]
+          align: "center"
+        })
+        Ui:C:container({
+          children: [
+            Ui:C:folder({
+              children: [
+                Ui:C:mfm({
+                  text: [
+                    `1.[設定->API]({SERVER_URL}/settings/api)`
+                    `　【アクセストークンの発行】ボタンを押下`
+                    `2.名前`
+                    `　アクセストークンの名前を入力`
+                    `3.権限`
+                    `　【アカウントの情報を見る】を有効に`
+                    `4.発行`
+                    `　右上の【✔️】を押下し発行`
+                    `　確認コードが表示されるのでコピー`
+                    `5.アクセストークンを保存`
+                    `　本Playにペーストし【アクセストークンを保存】ボタンを押下し、保存完了`
+                  ].join(Str:lf)
+                })
+              ]
+              title: "アクセストークンの作成・保存手順"
+              opened: true
+            })
+          ]
+          bgColor: "#89e555" // 背景色
+          borderColor: "#000" // 枠の色
+          borderStyle: "solid" // 枠の柄
+          padding: 2 // 余白幅
+          rounded: true // 角を丸く
+        })
+        Ui:C:container({
+          children: [
+            Ui:C:folder({
+              children: [
+                Ui:C:mfm({
+                  text: [
+                    `1.アクセストークンを削除`
+                    `　本Playの【アクセストークンを削除】ボタンを押下`
+                    `2.[設定->API]({SERVER_URL}/settings/api)`
+                    `　【アクセストークンの管理】ボタンを押下`
+                    `3.削除`
+                    `　作成したアクセストークンを【🗑️(ゴミ箱)】ボタンを押下し、削除完了`
+                  ].join(Str:lf)
+                })
+              ]
+              title: "アクセストークンの削除手順"
+              opened: false
+            })
+          ]
+          bgColor: "#ba8b55" // 背景色
+          borderColor: "#000" // 枠の色
+          borderStyle: "dashed" // 枠の柄
+          padding: 2 // 余白幅
+          rounded: true // 角を丸く
+        })
+      ])
+    }
+  }
+  // 実行
+  @exec() {
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    let loggedInDays = user.user.loggedInDays
+//<:`loggedInDays: {loggedInDays}`
+    if (loggedInDays != null) {
+      // 結果表示用
+      let resultMfm = [
+        `{user.getName()}のログイン日数は`
+        `***$[fg.color=f00 {loggedInDays}]***`
+      ].join(Str:lf)
+
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: [
+                resultMfm
+              ].join(Str:lf)
+            })
+            Ui:C:button({
+              text: `戻る`
+              onClick: init
+            })
+            Ui:C:postFormButton({
+              text: "投稿する"
+              form: {
+                text: [
+                  `<center>`
+                  resultMfm
+                  PLAY_URL
+                  PLAY_TAG
+                  `</center>`
+                ].join(Str:lf)
+              }
+              primary: true
+              rounded: true
+            })
+          ]
+          align: "center"
+        })
+      ])
+    } else {
+      
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: `$[x4 :GoBack:]`
+            })
+            Ui:C:button({
+              text: `戻る`
+              onClick: init
+            })
+          ]
+          align: "center"
+        })
+      ])
+
+      Mk:dialog("エラー", [
+        `ユーザー情報が正しく取得できませんでした`
+        `$[x2 :fushiginakotomoarumondesuna::mimi_hate:]`
+        `一度トークンを削除して、新しいトークンを入力して試してみてねー👋`
+      ].join(Str:lf), "error")
+    }
+  }
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

@@ -4,8 +4,7 @@
 // This script is licensed under the MIT
 // https://opensource.org/licenses/mit-license.php
 
-let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/`
-let PLAY_TAG = "#人気のノート(仮)"
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9z5gdoekm4`
 
 // ユーザーデータ
 // param: id<str>
@@ -146,7 +145,6 @@ let PLAY_TAG = "#人気のノート(仮)"
             text: [
               `$[x2 Now Loading]`
               `{info_text}のノートへのリアクションを取得中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
-//              `<small>⚠️他サーバーから送られたのカスタム絵文字は除外</small>`
             ].join(Str:lf)
           })
         ]
@@ -166,7 +164,7 @@ let PLAY_TAG = "#人気のノート(仮)"
         })
       }
     }
-<:`notes_reactions: {notes_reactions[0]}`
+//<:`notes_reactions: {notes_reactions[0]}`
 
     let reaction_notes_count = notes_reactions.len
 
@@ -197,7 +195,6 @@ let PLAY_TAG = "#人気のノート(仮)"
                     Ui:C:button({
                       text: "もう一度(全てのノートを対象)"
                       onClick: @() {
-                        reaction_disp_mode = 0
                         fSearchAll = true
                         exec()
                       }
@@ -311,6 +308,13 @@ let PLAY_TAG = "#人気のノート(仮)"
         children: [
           Ui:C:mfm({
             text: resultMfm
+          })
+          Ui:C:button({
+            text: "もう一度"
+            onClick: @() {
+              fSearchAll = false
+              exec()
+            }
           })
         ]
         align: "center"

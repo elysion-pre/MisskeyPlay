@@ -63,12 +63,14 @@ let PLAY_TAG = "#もらったリアクション"
         return notes.concat(func(limit, {
           userId: this.user.id,
           withChannelNotes: params.withChannelNotes,
+          withReplies: params.withReplies,
           limit: Math:min(limit, 100),
           untilId: notes[notes.len - 1].id
         }))
       }
       return func(limit, {
         userId: this.user.id,
+        withReplies: true,
         withChannelNotes: true,
         limit: Math:min(limit, 100)
       })
@@ -79,6 +81,7 @@ let PLAY_TAG = "#もらったリアクション"
     getTodayNotes: @() {
       var notes = Mk:api("users/notes", {
         userId: this.user.id,
+        withReplies: true,
         withChannelNotes: true,
         limit: 100
       }).filter(@(i) {
@@ -89,6 +92,7 @@ let PLAY_TAG = "#もらったリアクション"
       loop {
         let add_notes = Mk:api("users/notes", {
           userId: this.user.id,
+          withReplies: true,
           withChannelNotes: true,
           limit: 100,
           untilId: notes[notes.len - 1].id

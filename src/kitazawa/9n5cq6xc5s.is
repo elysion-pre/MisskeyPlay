@@ -182,7 +182,7 @@ let IGNORE_EMOJI_LIST = eval {
     // 投稿用テキスト
     let postText = [
       `<center>`
-      `$[x2 ***{resultMfm}***]`
+      `$[tada.speed=0s ***{resultMfm}***]`
       PLAY_TAG
       PLAY_URL
       `</center>`
@@ -192,7 +192,7 @@ let IGNORE_EMOJI_LIST = eval {
       Ui:C:container({
         children: [
           Ui:C:mfm({
-            text: `$[x2 ***{resultMfm}***]`
+            text: `$[tada.speed=0s ***{resultMfm}***]`
           })
         ]
         align: "center"

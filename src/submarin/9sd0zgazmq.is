@@ -1,4 +1,4 @@
-/// @ 0.18.0
+/// @ 0.19.0
 // 俳句
 // Copyright (c) 2024 @elysion
 // This script is licensed under the MIT
@@ -293,7 +293,7 @@ let WORD07_CHOICE_LIST = eval  {
     if (fWordOver) {
       postText.push([
         `<center>`
-        `$[x2 {resultMfm.join(Str:lf)}]`
+        `$[tada.speed=0s {resultMfm.join(Str:lf)}]`
         infoMfm.join(Str:lf)
         PLAY_TAG
         PLAY_URL
@@ -302,7 +302,7 @@ let WORD07_CHOICE_LIST = eval  {
     } else {
       postText.push([
         `<center>`
-        `$[x2 {resultMfm.join(Str:lf)}]`
+        `$[tada.speed=0s {resultMfm.join(Str:lf)}]`
         PLAY_TAG
         PLAY_URL
         `</center>`
@@ -335,7 +335,7 @@ let WORD07_CHOICE_LIST = eval  {
         children: [
           Ui:C:mfm({
             text: [
-              `$[x2 {resultMfm.join(Str:lf)}]`
+              `$[tada.speed=0s {resultMfm.join(Str:lf)}]`
               infoMfm.join(Str:lf)
             ].join(Str:lf)
           })

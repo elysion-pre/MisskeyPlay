@@ -873,11 +873,22 @@ let RANK_DATA = [
       rankMfm
     ].join(Str:lf)
 
+    // タグ
+    let tagText = eval {
+      var text = PLAY_TAG
+      match rank {
+        0 => text = `{text} {PLAY_TAG}_RF`
+        1 => text = `{text} {PLAY_TAG}_SF`
+        2 => text = `{text} {PLAY_TAG}_FOK`
+      }
+      text
+    }
+
     // 投稿用テキスト
     let postText = [
       `<center>`
       resultMfm
-      PLAY_TAG
+      tagText
       PLAY_URL
       `</center>`
     ].join(Str:lf)

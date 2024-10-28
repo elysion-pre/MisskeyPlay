@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/mit-license.php
 
 let PLAY_NAME = "今日の味噌汁"
+let PLAY_TAG = "#KITAZAWA_MISO_SOUP"
 let PLAY_URL = if exists THIS_URL THIS_URL else "https://msk.kitazawa.me/play/9kpwqxi4em"
 let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_NAME
 
@@ -89,6 +90,7 @@ let MISO_SOUP_DATA = eval {
                 `<center>`
                 PLAY_NAME
                 resultMfm
+                PLAY_TAG
                 PLAY_URL
                 `</center>`
               ].join(Str:lf)

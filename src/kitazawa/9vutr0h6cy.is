@@ -1,4 +1,4 @@
-/// @ 0.18.0
+/// @ 0.19.0
 // きたざわんち
 // Copyright (c) 2024 @elysion
 // This script is licensed under the MIT
@@ -250,9 +250,11 @@ let CLOCK_EMOJIS = [
       "yuzuriha",
       // 素材
       "nibimimi_1",
-      // msk.seppuku.club
+      // 他鯖/mi.kochudaho.me
+      "kochudaho_kuchi_kintama",
+      // 他鯖/msk.seppuku.club
       "marin",
-      // team.matechan.com
+      // 他鯖/team.matechan.com
       "hisubway_chibi", "matechan_chibi"
     ].map(@(v) {
       `:{v}:`

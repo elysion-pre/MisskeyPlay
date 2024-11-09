@@ -1,0 +1,184 @@
+/// @ 0.19.0
+// ロールもどき
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/a0dgdefq95`
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
+
+let random = eval {
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+@Game() {
+  let render_components = []
+  var data = {}
+
+  // 初期化
+  @init() {
+    data = {
+      name: "  ガキ箱  "
+      name_color: "dadada"
+      border_width: 1.2
+      border_color: "303030"
+    }
+    main()
+  }
+  @update(d) {
+    render_components.pop()
+    render_components.push(
+      Ui:C:container({
+        children: [
+          Ui:C:folder({
+            children: [
+              Ui:C:mfm({
+                text: `$[border.color={d.border_color},width={d.border_width},radius=50 $[fg.color={d.name_color} {d.name}]]`
+              })
+            ]
+            title: "結果"
+          })
+          Ui:C:folder({
+            children: [
+              Ui:C:mfm({
+                text: [
+                  `\`\`\``
+                  `$[border.color={d.border_color},width={d.border_width},radius=50 $[fg.color={d.name_color} {d.name}]]`
+                  `\`\`\``
+                ].join(Str:lf)
+              })
+            ]
+            title: "コピー用"
+          })
+        ]
+        align: "center"
+      })
+    )
+    render(render_components)
+  }
+  // メイン処理
+  @main() {
+    render_components.push(
+      Ui:C:container({
+        children: [
+          Ui:C:textInput({
+            onInput: @(text) {
+              data.name = text
+            }
+            default: data.name
+            label: "文字"
+            caption: "左右の幅はスペース等で調整してください"
+          })
+          Ui:C:textInput({
+            onInput: @(text) {
+              data.name_color = text
+            }
+            default: data.name_color
+            label: "文字色"
+            caption: "既定値: dadada、例: 【fff】または【fffff】。詳しくはカラーコードで検索"
+          })
+          Ui:C:numberInput({
+            onInput: @(number) {
+              data.border_width = number
+            }
+            default: data.border_width
+            label: "枠の太さ"
+            caption: "既定値: 1.2"
+          })
+          Ui:C:textInput({
+            onInput: @(text) {
+              data.border_color = text
+            }
+            default: data.border_color
+            label: "枠の色"
+            caption: "既定値: 303030"
+          })
+          Ui:C:button({
+            onClick: @() {
+              update(data)
+            }
+            text: "更新する"
+            primary: true
+            rounded: true
+          })
+          Ui:C:button({
+            onClick: @() {
+              // テキストの色
+              let rnd_col = eval {
+                var hex = Num:to_hex(random(0, 16777216))
+                let c = `000000{hex}`
+                hex = c.slice(c.len - 6, c.len)
+                hex
+              }
+              let d = {
+                name: data.name
+                name_color: data.name_color
+                border_width: data.border_width
+                border_color: rnd_col
+              }
+              update(d)
+            }
+            text: "更新する(枠の色ランダム)"
+          })
+          Ui:C:button({
+            onClick: @() {
+              // テキストの色
+              let rnd_col = eval {
+                var hex = Num:to_hex(random(0, 16777216))
+                let c = `000000{hex}`
+                hex = c.slice(c.len - 6, c.len)
+                hex
+              }
+              let d = {
+                name: data.name
+                name_color: rnd_col
+                border_width: data.border_width
+                border_color: data.border_color
+              }
+              update(d)
+            }
+            text: "更新する(文字の色ランダム)"
+          })
+        ]
+        align: "center"
+      })
+    )
+    render_components.push(
+      Ui:C:container({
+        children: [
+          Ui:C:folder({
+            children: [
+              Ui:C:mfm({
+                text: `$[border.color={data.border_color},width={data.border_width},radius=50 $[fg.color={data.name_color} {data.name}]]`
+              })
+            ]
+            title: "結果"
+          })
+          Ui:C:folder({
+            children: [
+              Ui:C:mfm({
+                text: [
+                  `\`\`\``
+                  `$[border.color={data.border_color},width={data.border_width},radius=50 $[fg.color={data.name_color} {data.name}]]`
+                  `\`\`\``
+                ].join(Str:lf)
+              })
+            ]
+            title: "コピー用"
+          })
+        ]
+        align: "center"
+      })
+    )
+    render(render_components)
+  }
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

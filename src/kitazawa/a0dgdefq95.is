@@ -4,6 +4,7 @@
 // This script is licensed under the MIT
 // https://opensource.org/licenses/mit-license.php
 
+let PLAY_NAME = "ロールもどき"
 let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/a0dgdefq95`
 let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
 
@@ -29,6 +30,8 @@ let random = eval {
     }
     main()
   }
+  // 更新
+  // param: d<obj>
   @update(d) {
     render_components.pop()
     render_components.push(
@@ -36,8 +39,25 @@ let random = eval {
         children: [
           Ui:C:folder({
             children: [
-              Ui:C:mfm({
-                text: `$[border.color={d.border_color},width={d.border_width},radius=50 $[fg.color={d.name_color} {d.name}]]`
+              Ui:C:container({
+                children: [
+                  Ui:C:mfm({
+                    text: `$[border.color={d.border_color},width={d.border_width},radius=50 $[fg.color={d.name_color} {d.name}]]`
+                  })
+                  Ui:C:postFormButton({
+                    text: "投稿する"
+                    form: {
+                      text: [
+                        `<center>`
+                        `$[border.color={d.border_color},width={d.border_width},radius=50 $[fg.color={d.name_color} {d.name}]]`
+                        PLAY_URL
+                        `</center>`
+                      ].join(Str:lf)
+                    }
+                    primary: true
+                    rounded: true
+                  })
+                ]
               })
             ]
             title: "結果"
@@ -79,7 +99,7 @@ let random = eval {
             }
             default: data.name_color
             label: "文字色"
-            caption: "既定値: dadada、例: 【fff】または【fffff】。詳しくはカラーコードで検索"
+            caption: "既定値: dadada、例: 【fff】または【ffffff】。詳しくはカラーコードで検索"
           })
           Ui:C:numberInput({
             onInput: @(number) {
@@ -162,6 +182,7 @@ let random = eval {
             children: [
               Ui:C:mfm({
                 text: [
+                  `<small>プロフィールに貼り付ける場合は下記をコピー</small>`
                   `\`\`\``
                   `$[border.color={data.border_color},width={data.border_width},radius=50 $[fg.color={data.name_color} {data.name}]]`
                   `\`\`\``

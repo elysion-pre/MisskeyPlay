@@ -85,3 +85,6 @@ Copyright (c) 2024 elysion
 - [Streamカード](./page/stream/9wpztb1yxtf10ca6.md)
 - [もらったリアクション](./page/stream/9z0zshdmpatd06jr.md)
 
+### mi.kochudaho.me
+デイリー
+- [今日のおくりもの](./page/kochudaho/a0eqpkl0tk.md)

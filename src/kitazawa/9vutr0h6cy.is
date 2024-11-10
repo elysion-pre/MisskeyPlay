@@ -4,7 +4,7 @@
 // This script is licensed under the MIT
 // https://opensource.org/licenses/mit-license.php
 
-let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9vudzmzjub`
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9vutr0h6cy`
 let PLAY_TAG = "#KITAZAWA_HOUSE"
 let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
 

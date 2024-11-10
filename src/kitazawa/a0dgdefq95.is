@@ -4,7 +4,6 @@
 // This script is licensed under the MIT
 // https://opensource.org/licenses/mit-license.php
 
-let PLAY_NAME = "ロールもどき"
 let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/a0dgdefq95`
 let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
 
@@ -17,23 +16,185 @@ let random = eval {
 }
 
 @Game() {
-  let render_components = []
-  var data = {}
+  var render_components = []
+  var role_data = {}
 
   // 初期化
   @init() {
-    data = {
-      name: "  ガキ箱  "
-      name_color: "dadada"
-      border_width: 1.2
-      border_color: "303030"
+    role_data = Mk:load(`@{USER_ID}/role_data`)
+    
+    if (role_data == null) {
+      role_data = {
+        name: "ガキ箱"
+        name_color: "dadada"
+        background_color: "dcdcdc"
+        border_width: 1.2
+        border_color: "303030"
+        fBackgroundColor: false
+        fProfileLink: false
+      }
     }
     main()
   }
-  // 更新
-  // param: d<obj>
-  @update(d) {
-    render_components.pop()
+  // ランダム色
+  // return: <str>
+  @randomHex() {
+    let c = `000000{Num:to_hex(random(0, 16777216))}`
+    c.slice(c.len - 6, c.len)
+  }
+  // メイン処理
+  @main() {
+    render_components = []
+    render_components.push(
+      Ui:C:container({
+        children: [
+          Ui:C:textInput({
+            onInput: @(text) {
+              role_data.name = text
+            }
+            default: role_data.name
+            label: "文字"
+            caption: "左右の幅はスペース等で調整してください"
+          })
+          Ui:C:textInput({
+            onInput: @(text) {
+              role_data.name_color = text.replace("#", "")
+            }
+            default: role_data.name_color
+            label: "文字色"
+            caption: "既定値: dadada、例: 【fff】または【ffffff】。詳しくはカラーコードで検索"
+          })
+          Ui:C:numberInput({
+            onInput: @(number) {
+              role_data.border_width = number
+            }
+            default: role_data.border_width
+            label: "枠の太さ"
+            caption: "既定値: 1.2"
+          })
+          Ui:C:textInput({
+            onInput: @(text) {
+              role_data.border_color = text.replace("#", "")
+            }
+            default: role_data.border_color
+            label: "枠の色"
+            caption: "既定値: 303030"
+          })
+          Ui:C:switch({
+            onChange: @(enabled) {
+              role_data.fBackgroundColor = enabled
+              main()
+            }
+            default: role_data.fBackgroundColor
+            label: "背景色を使用"
+            caption: "⚠️ONにしないと反映されません"
+          })
+          Ui:C:textInput({
+            onInput: @(text) {
+              role_data.background_color = text.replace("#", "")
+            }
+            default: role_data.background_color
+            label: "背景色"
+            caption: "既定値: dcdcdc"
+          })
+          Ui:C:switch({
+            onChange: @(enabled) {
+              if USER_USERNAME != null {
+                role_data.fProfileLink = enabled
+              } else {
+                Mk:dialog("エラー", [
+                  `ユーザー名が見つかりませんでした`
+                  `$[x2 :fushiginakotomoarumondesuna::mimi_hate:]`
+                  `ログインしてからONにしてみてねー👋`
+                ].join(Str:lf), "error")
+                role_data.fProfileLink = false
+              }
+              main()
+            }
+            default: role_data.fProfileLink
+            label: "自身のプロフィールリンクを埋め込む"
+            caption: "作成されたロールもどきをタップすると、自身のプロフィールへ遷移するリンクになります"
+          })
+          Ui:C:button({
+            onClick: main
+            text: "更新する"
+            primary: true
+            rounded: true
+          })
+          Ui:C:button({
+            onClick: @() {
+              if Mk:confirm("確認", [
+                "初期設定に戻しますか？"
+                "$[x2 :majikaw::mimi_hate:]"
+              ].join(Str:lf), "warning") {
+                Mk:save(`@{USER_ID}/role_data`, null)
+                init()
+              }
+            }
+            text: "初期設定に戻す"
+          })
+          Ui:C:folder({
+            children: [
+              Ui:C:buttons({
+                buttons: [
+                  {
+                    onClick: @() {
+                      role_data.name_color = randomHex()
+                      main()
+                    }
+                    text: "文字色"
+                  },
+                  {
+                    onClick: @() {
+                      role_data.border_color = randomHex()
+                      main()
+                    }
+                    text: "枠の色"
+                  },
+                  {
+                    onClick: @() {
+                      role_data.background_color = randomHex()
+                      if !role_data.fBackgroundColor role_data.fBackgroundColor = true
+                      main()
+                    }
+                    text: "背景色"
+                  },
+                  {
+                    onClick: @() {
+                      role_data.name_color = randomHex()
+                      role_data.border_color = randomHex()
+                      role_data.background_color = randomHex()
+                      if !role_data.fBackgroundColor role_data.fBackgroundColor = true
+                      main()
+                    }
+                    text: "ALL"
+                  }
+                ]
+              })
+            ]
+            title: "色(ランダム)"
+          })
+        ]
+        align: "center"
+      })
+    )
+    
+    var resultMfm = ""
+    // fg装飾
+    resultMfm = `$[fg.color={role_data.name_color}   {role_data.name}  ]`
+
+    if role_data.fBackgroundColor {
+      // bg装飾
+      resultMfm = `$[bg.color={role_data.background_color} {resultMfm}]`
+    }
+    // border装飾
+    resultMfm = `$[border.color={role_data.border_color},width={role_data.border_width},radius=50 {resultMfm}]`
+
+    if role_data.fProfileLink {
+      // プロフィールURL埋め込み
+      resultMfm = `?[{resultMfm}]({SERVER_URL}/@{USER_USERNAME})`
+    }
+    
     render_components.push(
       Ui:C:container({
         children: [
@@ -42,14 +203,14 @@ let random = eval {
               Ui:C:container({
                 children: [
                   Ui:C:mfm({
-                    text: `$[border.color={d.border_color},width={d.border_width},radius=50 $[fg.color={d.name_color} {d.name}]]`
+                    text: resultMfm
                   })
                   Ui:C:postFormButton({
                     text: "投稿する"
                     form: {
                       text: [
                         `<center>`
-                        `$[border.color={d.border_color},width={d.border_width},radius=50 $[fg.color={d.name_color} {d.name}]]`
+                        resultMfm
                         PLAY_URL
                         `</center>`
                       ].join(Str:lf)
@@ -66,125 +227,9 @@ let random = eval {
             children: [
               Ui:C:mfm({
                 text: [
-                  `\`\`\``
-                  `$[border.color={d.border_color},width={d.border_width},radius=50 $[fg.color={d.name_color} {d.name}]]`
-                  `\`\`\``
-                ].join(Str:lf)
-              })
-            ]
-            title: "コピー用"
-          })
-        ]
-        align: "center"
-      })
-    )
-    render(render_components)
-  }
-  // メイン処理
-  @main() {
-    render_components.push(
-      Ui:C:container({
-        children: [
-          Ui:C:textInput({
-            onInput: @(text) {
-              data.name = text
-            }
-            default: data.name
-            label: "文字"
-            caption: "左右の幅はスペース等で調整してください"
-          })
-          Ui:C:textInput({
-            onInput: @(text) {
-              data.name_color = text
-            }
-            default: data.name_color
-            label: "文字色"
-            caption: "既定値: dadada、例: 【fff】または【ffffff】。詳しくはカラーコードで検索"
-          })
-          Ui:C:numberInput({
-            onInput: @(number) {
-              data.border_width = number
-            }
-            default: data.border_width
-            label: "枠の太さ"
-            caption: "既定値: 1.2"
-          })
-          Ui:C:textInput({
-            onInput: @(text) {
-              data.border_color = text
-            }
-            default: data.border_color
-            label: "枠の色"
-            caption: "既定値: 303030"
-          })
-          Ui:C:button({
-            onClick: @() {
-              update(data)
-            }
-            text: "更新する"
-            primary: true
-            rounded: true
-          })
-          Ui:C:button({
-            onClick: @() {
-              // テキストの色
-              let rnd_col = eval {
-                var hex = Num:to_hex(random(0, 16777216))
-                let c = `000000{hex}`
-                hex = c.slice(c.len - 6, c.len)
-                hex
-              }
-              let d = {
-                name: data.name
-                name_color: data.name_color
-                border_width: data.border_width
-                border_color: rnd_col
-              }
-              update(d)
-            }
-            text: "更新する(枠の色ランダム)"
-          })
-          Ui:C:button({
-            onClick: @() {
-              // テキストの色
-              let rnd_col = eval {
-                var hex = Num:to_hex(random(0, 16777216))
-                let c = `000000{hex}`
-                hex = c.slice(c.len - 6, c.len)
-                hex
-              }
-              let d = {
-                name: data.name
-                name_color: rnd_col
-                border_width: data.border_width
-                border_color: data.border_color
-              }
-              update(d)
-            }
-            text: "更新する(文字の色ランダム)"
-          })
-        ]
-        align: "center"
-      })
-    )
-    render_components.push(
-      Ui:C:container({
-        children: [
-          Ui:C:folder({
-            children: [
-              Ui:C:mfm({
-                text: `$[border.color={data.border_color},width={data.border_width},radius=50 $[fg.color={data.name_color} {data.name}]]`
-              })
-            ]
-            title: "結果"
-          })
-          Ui:C:folder({
-            children: [
-              Ui:C:mfm({
-                text: [
                   `<small>プロフィールに貼り付ける場合は下記をコピー</small>`
-                  `\`\`\``
-                  `$[border.color={data.border_color},width={data.border_width},radius=50 $[fg.color={data.name_color} {data.name}]]`
+                  `\`\`\`aiscript`
+                  resultMfm
                   `\`\`\``
                 ].join(Str:lf)
               })
@@ -196,6 +241,7 @@ let random = eval {
       })
     )
     render(render_components)
+    Mk:save(`@{USER_ID}/role_data`, role_data)
   }
   @render(components) {
     Ui:render(components)

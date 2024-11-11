@@ -8,17 +8,25 @@
 時間帯で背景が変わります
 
 > [!TIP]
-> テレビ
-> - mojiカテゴリからランダム
-> 
 > みみちゃん
 > - "mimi_"を含むカスタム絵文字からランダム
 > 
 > レインボーみみちゃん
 > - 1%で出現
 > 
-> 窓に映る何か
-> - 直接指定(ソースコード参照)
+> トモダチ
+> - pagesから取得したカテゴリからランダム
+> 
+> テレビ
+> - mojiカテゴリからランダム
+> 
+> 窓に映る来訪者
+> - pagesから取得した絵文字からランダム
+
+
+> [!WARNING]
+> きたざわんちで使用する絵文字やカテゴリをpagesにあるデータから読み込んでいます
+> [https://msk.kitazawa.me/@elysion/pages/kitazawa_house_data](https://msk.kitazawa.me/@elysion/pages/kitazawa_house_data)
 
 > [!WARNING]
 > 除外する絵文字のカテゴリをpagesにあるデータから読み込んでいます

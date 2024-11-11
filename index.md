@@ -69,6 +69,7 @@ Copyright (c) 2024 elysion
 - [人気のノート](./page/kitazawa/9z5gdoekm4.md)
 - [ログイン日数](./page/kitazawa/9z9ow5wnyo.md)
 - [ロールもどき](./page/kitazawa/a0dgdefq95.md)
+- [おまえんち](./page/kitazawa/a09kunsjku.md)
 
 ### misskey.stream
 デイリー

@@ -4,7 +4,7 @@
 // This script is licensed under the MIT
 // https://opensource.org/licenses/mit-license.php
 
-let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9vudzmzjub`
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9vutr0h6cy`
 let PLAY_TAG = "#KITAZAWA_HOUSE"
 let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
 
@@ -33,6 +33,27 @@ let IGNORE_EMOJI_LIST = eval {
         null
       ]
     }
+  } else {
+    data = Json:parse(pages_data.content[0].text)
+  }
+  data
+}
+
+// きたざわんちで使用する絵文字やカテゴリ
+// pagesのjsonデータ読み込み
+// https://{SERVER_URL}/@elysion/pages/kitazawa_house_data
+let EMOJI_LIST = eval {
+  var data = null
+  let pages_data = Mk:api("pages/show", {
+    name: "kitazawa_house_data"
+    username: "elysion"
+  })
+  if (Core:type(pages_data) == "error") {
+    Core:abort([
+      `pagesにデータが見つかりませんでした。`
+      `{SERVER_URL}/@elysion/pages/kitazawa_house_data`
+      `プログラムを停止します。`
+    ].join(Str:lf))
   } else {
     data = Json:parse(pages_data.content[0].text)
   }
@@ -229,7 +250,7 @@ let CLOCK_EMOJIS = [
     }).map(@(v) {
       `:{v.name}:`
     })
-// 1%でレインボーみみちゃん
+    // 1%でレインボーみみちゃん
     let mimichan = eval {
       if (random(0, 100) == 100) {
         `$[rainbow :mimi_niji:]`
@@ -238,51 +259,22 @@ let CLOCK_EMOJIS = [
       }
     }
 
-    // 窓にいるナニカ
-    let enemys = [
-      // icon
-      "mantou", "pamu_icon", "robo1501",
-      // pic
-      "child_izumoto", "endoukenichi", "kenkoba", "kenkoba_", "marucchi", "tamori", "tamori_",
-      // tama
-      "kusa_chinge", "moguchin", "oyasumi_chinge",
-      // のんびりぷらいす
-      "yuzuriha",
-      // 素材
-      "nibimimi_1",
-      // 他鯖/mi.kochudaho.me
-      "kochudaho_kuchi_kintama",
-      // 他鯖/msk.seppuku.club
-      "marin",
-      // 他鯖/team.matechan.com
-      "hisubway_chibi", "matechan_chibi"
-    ].map(@(v) {
-      `:{v}:`
-    })
-// 出現確率5%
-    let enemy = eval {
+    // 来訪者
+    // 出現確率5%
+    let visitor = eval {
       if (random(0, 100) >= 95) {
-        enemys[random(0, (enemys.len - 1))]
+        EMOJI_LIST.visitor_emojis[random(0, (EMOJI_LIST.visitor_emojis.len - 1))]
       } else {
         ":tp:"
       }
     }
-
+    
     // トモダチ
-    let friend_categories = [
-      "icon",
-      "pic",
-      "tama",
-      "さかなの",
-      "パム",
-      "絵",
-      "都道府県 いらすとや"
-    ]
     var friends = []
-    each (let c, friend_categories) {
+    each (let c, EMOJI_LIST.friends_categories) {
       friends = friends.concat(emojiMng.getCategoryEmojis(c))
     }
-// 出現確率50%
+    // 出現確率50%
     let friend = eval {
       if (random(0, 100) >= 50) {
         friends[random(0, (friends.len - 1))]
@@ -296,8 +288,8 @@ let CLOCK_EMOJIS = [
     // 結果表示用
     let resultMfm = [
       `$[position.x=-1,y=4 $[scale.x=4,y=2 $[scale.x=1.5,y=2  $[border.width=4,style=inset,color=c3bcab $[bg.color=aa9971 :tp:]]]]]`
-      `$[position.x=2,y=0 $[scale.x=2,y=2 {getClock()}]]$[position  $[position.x=5 $[border.color=D89E83,width=2,style=inset $[position $[scale $[rotate $[bg.color={sky_colors[0]} :tp:]]]]]]$[position.x=5 $[bg.color={sky_colors[0]} $[border.color=D89E83,width=2,style=inset $[position.x=1,y=1 $[scale.x=1.5,y=1.5 $[rotate.deg=45 $[bg.color={sky_colors[1]} :tp:]]]]]]]$[position.x=0.4,y=2.3 $[bg.color={sky_colors[0]} $[border.color=D89E83,width=2,style=inset $[position.x=1,y=1 $[scale.x=1.5,y=1.5 $[rotate.deg=45 $[bg.color={sky_colors[1]} :tp:]]]]]]]$[position.x=0.4,y=2.3 $[border.color=D89E83,width=2,style=inset $[position $[scale $[rotate.deg=0 $[bg.color={sky_colors[1]} :tp:]]]]]]]$[position.x=-1.575,y=2.25 $[scale.x=1.2,y=1.2 <small>{enemy}</small>]]`
-      `$[position.x=-2.6,y=2 $[scale.x=3,y=3 📺]]$[position.x=-4.2,y=2.2 $[scale.x=0.9,y=0.9 $[rainbow.speed=10s {moji}]]]`
+      `$[position.x=2,y=0 $[scale.x=2,y=2 {getClock()}]]$[position  $[position.x=5 $[border.color=D89E83,width=2,style=inset $[position $[scale $[rotate $[bg.color={sky_colors[0]} :tp:]]]]]]$[position.x=5 $[bg.color={sky_colors[0]} $[border.color=D89E83,width=2,style=inset $[position.x=1,y=1 $[scale.x=1.5,y=1.5 $[rotate.deg=45 $[bg.color={sky_colors[1]} :tp:]]]]]]]$[position.x=0.4,y=2.3 $[bg.color={sky_colors[0]} $[border.color=D89E83,width=2,style=inset $[position.x=1,y=1 $[scale.x=1.5,y=1.5 $[rotate.deg=45 $[bg.color={sky_colors[1]} :tp:]]]]]]]$[position.x=0.4,y=2.3 $[border.color=D89E83,width=2,style=inset $[position $[scale $[rotate.deg=0 $[bg.color={sky_colors[1]} :tp:]]]]]]]$[position.x=-1.575,y=2.25 $[scale.x=1.2,y=1.2 <small>{visitor}</small>]]`
+      `$[position.x=-2.6,y=2 $[scale.x=3,y=3 📺]]$[position.x=-4.2,y=2.1 $[scale.x=0.9,y=0.9 $[rainbow.speed=10s {moji}]]]`
       `$[position.x=2,y=1 $[scale.x=1.5,y=1.5 :{friend.name}:]]$[position.x=3,y=1 $[scale.x=1.5,y=1.5 {mimichan}]]`
       `:tp:`
     ].join(Str:lf)

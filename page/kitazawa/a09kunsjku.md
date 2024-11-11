@@ -10,7 +10,7 @@
 
 ## Play URL
 
-[https://msk.kitazawa.me/play/a0dgdefq95](https://msk.kitazawa.me/play/a09kunsjku)
+[https://msk.kitazawa.me/play/a09kunsjku](https://msk.kitazawa.me/play/a09kunsjku)
 
 ## ソース
 

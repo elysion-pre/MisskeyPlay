@@ -410,7 +410,7 @@ let CLOCK_EMOJIS = [
     let resultMfm = [
       `$[position.x=-1,y=4 $[scale.x=4,y=2 $[scale.x=1.5,y=2  $[border.width=4,style=inset,color=abc2bb $[bg.color=71ab99 :tp:]]]]]`
       `$[position.x=2,y=0 $[scale.x=2,y=2 {getClock()}]]$[position  $[position.x=5 $[border.color=D89E83,width=2,style=inset $[position $[scale $[rotate $[bg.color={sky_colors[0]} :tp:]]]]]]$[position.x=5 $[bg.color={sky_colors[0]} $[border.color=D89E83,width=2,style=inset $[position.x=1,y=1 $[scale.x=1.5,y=1.5 $[rotate.deg=45 $[bg.color={sky_colors[1]} :tp:]]]]]]]$[position.x=0.4,y=2.3 $[bg.color={sky_colors[0]} $[border.color=D89E83,width=2,style=inset $[position.x=1,y=1 $[scale.x=1.5,y=1.5 $[rotate.deg=45 $[bg.color={sky_colors[1]} :tp:]]]]]]]$[position.x=0.4,y=2.3 $[border.color=D89E83,width=2,style=inset $[position $[scale $[rotate.deg=0 $[bg.color={sky_colors[1]} :tp:]]]]]]]$[position.x=-1.575,y=2.25 $[scale.x=1.2,y=1.2 <small>:{house_data.visitor}:</small>]]`
-      `$[position.x=-2.6,y=2 $[scale.x=3,y=3 📺]]$[position.x=-4.2,y=2.2 $[scale.x=0.9,y=0.9 $[rainbow.speed=10s :{house_data.tv}:]]]`
+      `$[position.x=-2.6,y=2 $[scale.x=3,y=3 📺]]$[position.x=-4.2,y=2.1 $[scale.x=0.9,y=0.9 $[rainbow.speed=10s :{house_data.tv}:]]]`
       `$[position.x=2,y=1 $[scale.x=1.5,y=1.5 :{house_data.friend}:]]$[position.x=3,y=1 $[scale.x=1.5,y=1.5 :{house_data.mimi}:]]`
       `:tp:`
     ].join(Str:lf)

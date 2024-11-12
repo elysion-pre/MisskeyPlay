@@ -1,0 +1,168 @@
+/// @ 0.19.0
+// タグ投稿数
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+// タグ検索
+// param: search_tag<str>
+// param: fWithFiles<bool>
+// return: <arr>
+@getSearchByTag(search_tag, fWithFiles) {
+  var notes = Mk:api("notes/search-by-tag", {
+    withFiles: fWithFiles,
+    limit: 100,
+    tag: search_tag
+  })
+  if (notes.len < 100) return notes
+
+  loop {
+    let add_notes = Mk:api("notes/search-by-tag", {
+      withFiles: fWithFiles,
+      limit: 100,
+      tag: search_tag,
+      untilId: notes[notes.len - 1].id
+    })
+    notes = notes.concat(add_notes)
+    if add_notes.len < 100 break
+  }
+  notes
+}
+
+@Game() {
+  var search_data = {}
+
+  // 初期化
+  @init() {
+//    search_data = Mk:save(`@{USER_ID}/search_data`, null)
+
+    search_data = Mk:load(`@{USER_ID}/search_data`)
+    if search_data == null {
+      search_data = {
+        tags: ""
+        fWithFiles: false
+      }
+    }
+    
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:textInput({
+            onInput: @(text) {
+              search_data.tags = text
+            }
+            default: search_data.tags
+            label: "タグ"
+            caption: "#の有無は問わず。,(カンマ)区切りで複数指定可能"
+          })
+          Ui:C:switch({
+            onChange: @(enabled) {
+              search_data.fWithFiles = enabled
+            }
+            default: search_data.fWithFiles
+            label: "添付ファイルのみ"
+            caption: "⚠️OFFにすると添付ファイルがないノートも検索対象になります"
+          })
+          Ui:C:button({
+            onClick: @() {
+              Mk:save(`@{USER_ID}/search_data`, search_data)
+              main()
+            }
+            text: "検索"
+            primary: true
+            rounded: true
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  // メイン処理
+  @main() {
+    let result_data = []
+    let tags = search_data.tags.split(",").map(@(v) {
+      v.replace("#", "").replace(" ", "").replace("　", "")
+    })
+
+    each (let tag, tags) {
+      if tag.len == 0 continue
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: [
+                `$[x2 Now Loading]`
+                `【{tag}】タグ検索中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+              ].join(Str:lf)
+            })
+          ]
+          align: "center"
+        })
+      ])
+      result_data.push({
+        tag: tag,
+        notes: getSearchByTag(tag, search_data.fWithFiles)
+      })
+    }
+
+    // 結果表示用
+    let result_componets = []
+
+    each (let data, result_data) {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: [
+                `$[x2 Now Loading]`
+                `結果描画中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+                `<small>{data.notes.len}件のノートが見つかりました</small>`
+              ].join(Str:lf)
+            })
+          ]
+          align: "center"
+        })
+      ])
+      result_componets.push(
+        Ui:C:folder({
+          children: [
+            Ui:C:mfm({
+              text: [
+                `#{data.tag}`
+                `投稿数　: {data.notes.len}件`
+              ].join(Str:lf)
+            })
+          ]
+          title: `結果: #{data.tag}`
+        })
+      )
+    }
+
+    render([
+      Ui:C:container({
+        children: result_componets
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:button({
+            text: "もう一度"
+            onClick: init
+          })
+          Ui:C:mfm({
+            text: [
+              `<small>⚠️タグをタップしてこの画面を離れて戻ってきた場合`
+              `【もう一度】ボタンが効かなくなるので下記の🔄(更新)ボタンを押してリロードしてください</small>`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

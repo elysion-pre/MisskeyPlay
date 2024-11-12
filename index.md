@@ -92,5 +92,5 @@ Copyright (c) 2024 elysion
 - [今日のおくりもの](./page/kochudaho/a0eqpkl0tk.md)
 - [今日のカスタム絵文字](./page/kochudaho/a0ev01t5nf.md)
 
-その他
+  それ以外
 - [口金ついてますよ](./page/kochudaho/a0g8we6nux.md)

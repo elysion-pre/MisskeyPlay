@@ -70,6 +70,7 @@ Copyright (c) 2024 elysion
 - [ログイン日数](./page/kitazawa/9z9ow5wnyo.md)
 - [ロールもどき](./page/kitazawa/a0dgdefq95.md)
 - [おまえんち](./page/kitazawa/a09kunsjku.md)
+- [タグ投稿数](./page/kitazawa/a0i0dzvf7z.md)
 
 ### misskey.stream
 デイリー
@@ -89,3 +90,7 @@ Copyright (c) 2024 elysion
 ### mi.kochudaho.me
 デイリー
 - [今日のおくりもの](./page/kochudaho/a0eqpkl0tk.md)
+- [今日のカスタム絵文字](./page/kochudaho/a0ev01t5nf.md)
+
+その他
+- [口金ついてますよ](./page/kochudaho/a0g8we6nux.md)

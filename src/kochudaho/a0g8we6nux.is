@@ -27,7 +27,7 @@ let IGNORE_EMOJI_LIST = eval {
     username: "elysion"
   })
   if (Core:type(pages_data) == "error") {
-    data = { category: [ "TEXT", "TEXT_Submarin", "さくせん", "未分類", null ] }
+    data = { category: [ "TEXT", "TEXT_Submarin", "こしゃんblobcat", "さくせん", "しょblobcat", "未分類", null ] }
   } else {
     data = Json:parse(pages_data.content[0].text)
   }

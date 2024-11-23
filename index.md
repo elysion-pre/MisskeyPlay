@@ -94,3 +94,4 @@ Copyright (c) 2024 elysion
 
 それ以外
 - [口金ついてますよ](./page/kochudaho/a0g8we6nux.md)
+- [あなたの戦闘力](./page/kochudaho/a0xxcgegh1.md)

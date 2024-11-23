@@ -5,7 +5,7 @@
 // https://opensource.org/licenses/mit-license.php
 
 let PLAY_NAME = "あなたの戦闘力"
-let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9v7lf1q091`
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/a0xxcgegh1`
 let PLAY_TAG = "#自分の戦闘力上げてけ"
 
 @Game() {
@@ -18,7 +18,7 @@ let PLAY_TAG = "#自分の戦闘力上げてけ"
         Ui:C:container({
           children: [
             Ui:C:mfm({
-              text: `$[x4 :GoBack:]`
+              text: `$[x4 :kochudaho_cat_nadenade:]`
             })
           ]
           align: "center"
@@ -26,7 +26,7 @@ let PLAY_TAG = "#自分の戦闘力上げてけ"
       ])
       Mk:dialog("エラー", [
         `ユーザーIDが見つかりませんでした`
-        `$[x2 :fushiginakotomoarumondesuna::mimi_hate:]`
+        `$[x2 :sonnannaiyo::Maltese_crying3:]`
         `ログインしてから遊んでみてねー👋`
       ].join(Str:lf), "error")
     } else {
@@ -45,7 +45,7 @@ let PLAY_TAG = "#自分の戦闘力上げてけ"
         Ui:C:container({
           children: [
             Ui:C:mfm({
-              text: `$[x4 :GoBack:]`
+              text: `$[x4 :kochudaho_cat_nadenade:]`
             })
           ]
           align: "center"

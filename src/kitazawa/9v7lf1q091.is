@@ -1,135 +1,115 @@
-/// @ 0.18.0
+/// @ 0.19.0
 // あなたの戦闘力
 // Copyright (c) 2024 @elysion
 // This script is licensed under the MIT
 // https://opensource.org/licenses/mit-license.php
 
-let PLAY_NAME = "あなたの戦闘力"
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9v7lf1q091`
 let PLAY_TAG = "#自分の戦闘力上げてけ"
-let PLAY_URL = if exists THIS_URL THIS_URL else "https://msk.kitazawa.me/play/9sk84yujhh"
 
 @Game() {
-  // 結果表示テキスト
-  let resultMfm = []
-  // ユーザーの情報を取得
-  let user = Mk:api("users/show", {
-    userId: USER_ID
-  })
-  let archivements = Mk:api("users/achievements", {
-    userId: USER_ID
-  })
-  match Core:type(user) {
-    "error" => {
-      Mk:dialog(user.name, "ユーザー情報が取得できませんでした。", "error")
-      resultMfm.push([
-        user.name
-        Json:stringify(user.info)
-      ].join(Str:lf))
-      // 結果表示UI更新
-      Ui:get("resultMfm").update({
-        text: resultMfm.join(Str:lf)
-      })
-      // UI表示・非表示
-      Ui:get("loading_area").update({ hidden: true })
-      Ui:get("main_area").update({ hidden: false })
+
+  // 初期化
+  @init() {
+
+    if (USER_ID == null) {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: `$[x4 :GoBack:]`
+            })
+          ]
+          align: "center"
+        })
+      ])
+      Mk:dialog("エラー", [
+        `ユーザーIDが見つかりませんでした`
+        `$[x2 :fushiginakotomoarumondesuna::mimi_hate:]`
+        `ログインしてから遊んでみてねー👋`
+      ].join(Str:lf), "error")
+    } else {
+      main()
     }
-    "obj" => {
+  }
+  // メイン処理
+  @main() {
+    // ユーザーの情報を取得
+    let user = Mk:api("users/show", {
+      userId: USER_ID
+    })
+    
+    if Core:type(user) == "error" {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: `$[x4 :GoBack:]`
+            })
+          ]
+          align: "center"
+        })
+      ])
+      Mk:dialog(user.name, "ユーザー情報が取得できませんでした。", "error")
+    } else {
+      let archivements = Mk:api("users/achievements", {
+        userId: user.id
+      })
+      
       let note_score = Math:floor(user.notesCount * 0.1)
       let ff_score = ((user.followersCount - user.followingCount) * 10)
       let days_score = (Math:floor((Date:now() - Date:parse(user.createdAt)) / 86400000) * 100)
       let archivements_score = (archivements.len * 50)
       let power = note_score + ff_score + days_score + archivements_score
-      resultMfm.push(`$[fg.color=f00 ***{power}***]`)
-
-      // 結果表示UI更新
-      Ui:get("resultMfm").update({
-        text: resultMfm.join(Str:lf)
-      })
-
-      // 情報表示UI更新
-      Ui:get("infoMfm").update({
-        text: [
-          `<small><small>`
-          `スコア1: ノート数({user.notesCount}) × 0.1 = $[fg.color=f00 {note_score}]`
-          `スコア2: フォロワー数({user.followersCount}) - フォロー数({user.followingCount}) × 10 = $[fg.color=f00 {ff_score}]`
-          `スコア3: 始めて何日({Math:floor((Date:now() - Date:parse(user.createdAt)) / 86400000)}) × 100 = $[fg.color=f00 {days_score}]`
-          `スコア4: [実績]({SERVER_URL}/my/achievements)解除数({archivements.len}) × 50 = $[fg.color=f00 {archivements_score}]`
-          `戦闘力: {note_score} + {ff_score} + {days_score} + {archivements_score} = {power}`
-          `</small></small>`
-        ].join(Str:lf)
-      })
-
-      // 投稿用テキスト
-      let postText = [
-        `<center>`
-        PLAY_NAME
-        resultMfm.join(Str:lf)
-        PLAY_TAG
-        PLAY_URL
-        `</center>`
+      
+      let resultMfm = [
+       `$[fg.color=f00 ***{power}***]`
       ].join(Str:lf)
-
-      // 投稿UI更新
-      Ui:get("postFormButton").update({
-        text: "投稿する"
-        form: {
-          text: postText
-        }
-        primary: true
-        rounded: true
-      })
-      // UI表示・非表示
-      Ui:get("loading_area").update({ hidden: true })
-      Ui:get("main_area").update({ hidden: false })
-      Ui:get("info_area").update({ hidden: false })
-      Ui:get("post_area").update({ hidden: false })
+      
+      let infoMfm = [
+        `<small><small>`
+        `スコア1: ノート数({user.notesCount}) × 0.1 = $[fg.color=f00 {note_score}]`
+        `スコア2: フォロワー数({user.followersCount}) - フォロー数({user.followingCount}) × 10 = $[fg.color=f00 {ff_score}]`
+        `スコア3: 始めて何日({Math:floor((Date:now() - Date:parse(user.createdAt)) / 86400000)}) × 100 = $[fg.color=f00 {days_score}]`
+        `スコア4: [実績]({SERVER_URL}/my/achievements)解除数({archivements.len}) × 50 = $[fg.color=f00 {archivements_score}]`
+        `戦闘力: {note_score} + {ff_score} + {days_score} + {archivements_score} = {power}`
+        `</small></small>`
+      ].join(Str:lf)
+      
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: resultMfm
+            })
+            Ui:C:mfm({
+              text: infoMfm
+            })
+            Ui:C:postFormButton({
+              text: "投稿する"
+              form: {
+                text: [
+                  `<center>`
+                  resultMfm
+                  PLAY_URL
+                  PLAY_TAG
+                  `</center>`
+                ].join(Str:lf)
+              }
+              primary: true
+              rounded: true
+            })
+          ]
+          align: "center"
+        })
+      ])
     }
   }
+  // 描画
+  // param: components<arr>
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
 }
-
-Ui:render([
-  Ui:C:container({
-    children: [
-      Ui:C:mfm({
-        text: `$[x2 {PLAY_NAME}]`
-      }, "titleMfm")
-    ]
-    align: "center"
-  } "title_area")
-  Ui:C:container({
-    children: [
-      Ui:C:mfm({
-        text: `$[x2 $[bounce Now Loading...]]`
-      }, "loadingMfm")
-    ]
-    align: "center"
-  } "loading_area")
-  Ui:C:container({
-    children: [
-      Ui:C:mfm({}, "resultMfm")
-    ]
-    align: "center"
-    hidden: true
-  }, "main_area")
-  Ui:C:container({
-    children: [
-      Ui:C:mfm({}, "infoMfm")
-    ]
-    hidden: true
-  }, "info_area")
-  Ui:C:container({
-    children: [
-      Ui:C:postFormButton({}, "postFormButton")
-    ]
-    align: "center"
-    hidden: true
-  }, "post_area")
-])
-if (USER_ID != null) {
-  Game()
-} else {
-  Mk:dialog("", [
-    "ユーザーIDが見つかりませんでした"
-    "ログインしてから遊んでみてね"
-  ].join(Str:lf), "error")
-}
+Game()

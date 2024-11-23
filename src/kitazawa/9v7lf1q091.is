@@ -4,6 +4,7 @@
 // This script is licensed under the MIT
 // https://opensource.org/licenses/mit-license.php
 
+let PLAY_NAME = "あなたの戦闘力"
 let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9v7lf1q091`
 let PLAY_TAG = "#自分の戦闘力上げてけ"
 
@@ -90,6 +91,7 @@ let PLAY_TAG = "#自分の戦闘力上げてけ"
               form: {
                 text: [
                   `<center>`
+                  PLAY_NAME
                   resultMfm
                   PLAY_URL
                   PLAY_TAG

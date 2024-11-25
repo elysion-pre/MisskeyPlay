@@ -263,7 +263,7 @@ let PLAY_TAG = "#REVERSI_RECORD"
       `{match_userMfm}とのリバーシ成績`
       `{match_user_results.len}戦{match_user_rate_obj.win}勝{match_user_rate_obj.lose}敗{match_user_rate_obj.draw}分け`
       `$[border.width=2,radius=5,color={color.border},style=inset {barMfm}]`
-      `勝: {Math:round(match_user_rate_obj.win / match_user_results.len * 100)}%, 負: {Math:round(match_user_rate_obj.lose / match_user_results.len * 100)}%, 分: {Math:round(match_user_rate_obj.draw / match_user_results.len * 100)}%`
+      `勝: {Math:round(match_user_rate_obj.win / match_user_results.len * 1000) / 10}%, 負: {Math:round(match_user_rate_obj.lose / match_user_results.len * 1000) / 10}%, 分: {Math:round(match_user_rate_obj.draw / match_user_results.len * 1000) / 10}%`
       `<small>🏳️投了した数: {match_user_rate_obj.surrender}`
       `⏰時間切れ数: {match_user_rate_obj.timeout}</small>`
     ].join(Str:lf)
@@ -428,7 +428,7 @@ let PLAY_TAG = "#REVERSI_RECORD"
       `{userMfm}のリバーシ成績`
       `{result_data.len}戦{rate_obj.win}勝{rate_obj.lose}敗{rate_obj.draw}分け`
       `$[border.width=2,radius=5,color={color.border},style=inset {barMfm}]`
-      `勝: {Math:round(rate_obj.win / result_data.len * 100)}%, 負: {Math:round(rate_obj.lose / result_data.len * 100)}%, 分: {Math:round(rate_obj.draw / result_data.len * 100)}%`
+      `勝: {Math:round(rate_obj.win / result_data.len * 1000) / 10}%, 負: {Math:round(rate_obj.lose / result_data.len * 1000) / 10}%, 分: {Math:round(rate_obj.draw / result_data.len * 1000) / 10}%`
       `<small>🏳️投了した数: {rate_obj.surrender}`
       `⏰時間切れ数: {rate_obj.timeout}</small>`
     ].join(Str:lf)

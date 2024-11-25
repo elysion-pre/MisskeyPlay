@@ -37,11 +37,14 @@ let PLAY_TAG = "#REVERSI_RECORD"
       Mk:save(`@{USER_ID}/reversi_data`, this.data)
       Mk:save(`@{USER_ID}/last_id`, this.last_id)
     }
-    // ゲームデータがあるか否か
-    // return <bool>
-    isGameData: @() { if this.data.len == 0 return false else return true }
     // データ取得
     getData: @() { return this.data }
+    // ゲームデータがあるか否か
+    // return <bool>
+    isGameData: @() {
+      if this.data == null return false
+      if this.data.len == 0 return false else return true
+    }
     // ゲームデータ取得
     getGameData: @() {
       var games = []
@@ -138,7 +141,7 @@ let PLAY_TAG = "#REVERSI_RECORD"
       reversi.getGameData()
 
       // ゲームデータがなかったら
-      if reversi.getData() != null && !reversi.isGameData() {
+      if !reversi.isGameData() {
         render([
           Ui:C:container({
             children: [

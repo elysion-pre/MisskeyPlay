@@ -138,7 +138,7 @@ let PLAY_TAG = "#REVERSI_RECORD"
       reversi.getGameData()
 
       // ゲームデータがなかったら
-      if !reversi.isGameData() {
+      if reversi.getData() != null && !reversi.isGameData() {
         render([
           Ui:C:container({
             children: [

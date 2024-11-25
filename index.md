@@ -29,6 +29,7 @@ Copyright (c) 2024 elysion
 - [初めてのノート](./page/submarin/9v6obzef07.md)
 - [さんまぶりカード](./page/submarin/9wpzr2j1d5.md)
 - [もらったリアクション](./page/submarin/9z0z43izkk.md)
+- [リバーシレコード](./page/submarin/a103wpk0sp.md)
 
 ### msk.kitazawa.me
 デイリー
@@ -71,6 +72,7 @@ Copyright (c) 2024 elysion
 - [ロールもどき](./page/kitazawa/a0dgdefq95.md)
 - [おまえんち](./page/kitazawa/a09kunsjku.md)
 - [タグ投稿数](./page/kitazawa/a0i0dzvf7z.md)
+- [リバーシレコード](./page/kitazawa/a103pp9bls.md)
 
 ### misskey.stream
 デイリー
@@ -86,6 +88,7 @@ Copyright (c) 2024 elysion
 - [気まぐれカスタム絵文字](./page/stream/9uipd6yld12305wz.md)
 - [Streamカード](./page/stream/9wpztb1yxtf10ca6.md)
 - [もらったリアクション](./page/stream/9z0zshdmpatd06jr.md)
+- [リバーシレコード](./page/stream/a103xv0hnlxp003s.md)
 
 ### mi.kochudaho.me
 デイリー

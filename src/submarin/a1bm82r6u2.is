@@ -1,0 +1,242 @@
+/// @ 0.19.0
+// base64 converter
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+// <arr>
+let CHARAS_LIST = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".to_arr()
+
+// バイナリ文字列に変換
+// param: byte<number>
+// return: <str>
+@to_binary(byte) {
+  var binary = ""
+  loop {
+    if byte == 0 break
+    binary = [`{Math:floor(byte % 2)}`.to_num().to_str() binary].join()
+    byte = `{Math:floor(byte / 2)}`.to_num()
+  }
+  return binary.pad_start(6, "0")
+}
+
+// UTF-8バイト列に変換
+// param: binary_arr<arr>
+// return: <number>
+@binary_to_utf8(binary_arr) {
+  var decimal = 0
+  binary_arr.reverse()
+
+  for (let i = 0, binary_arr.len) {
+    // 0 or 1を数値に変換
+    let bit = binary_arr[i].to_num()
+    decimal += bit * Core:pow(2, i)
+  }
+  return decimal
+}
+
+// デコード
+// param: base64_str<str>
+// return: <str>
+@decode_base64(base64_str) {
+  var binary = []
+  // Base64文字列をバイナリ文字列に変換
+  each (let char, base64_str.to_arr()) {
+    // パディング文字は無視
+    if char == "=" continue
+
+    let value = CHARAS_LIST.index_of(char)
+    if (value == -1) {
+      // エラーメッセージを表示
+      Mk:dialog("Error", "Invalid Base64 character found.")
+      // 不正な文字の場合は空文字列を返す
+      return ""
+    }
+    // バイナリ文字列に変換
+    let binary_str = to_binary(value)
+<:`binary_str: {binary_str}`
+    each (let bit, binary_str.to_arr()) {
+      // binary配列に1ビットずつ追加
+      binary.push(bit)
+    }
+  }
+<:`binary: {binary}`
+
+  // UTF-8バイト列に変換
+  let utf8_bytes = []
+  var i = 0
+  loop {
+    // binary配列の終わりに達したらループを終了
+    if i >= binary.len break
+    // 8ビットごとに分割
+    let byte = binary.slice(i, i + 8)
+    if byte.len == 8 utf8_bytes.push(binary_to_utf8(byte))
+    i += 8
+  }
+<:`utf8_bytes: {utf8_bytes}`
+
+  // UTF-8のバイト列を表す数値の配列から文字を生成
+  return Str:from_utf8_bytes(utf8_bytes)
+}
+
+// UTF-8文字列をバイナリ文字列に変換
+// param: utf8_bytes<str>
+// return: <str>
+@utf8_to_binary(utf8_bytes) {
+  var binary_str = ""
+  each (let byte, utf8_bytes) {
+    let binary = to_binary(byte)
+    binary_str = [binary_str binary.pad_start(8, "0")].join()
+  }
+  return binary_str
+}
+
+// バイナリ文字列を6ビット単位に分割
+// param: binary_str<str>
+// return: <str>
+@binary_to_base64_segments(binary_str) {
+  let segments = []
+  var current_segment = ""
+  
+  // 6ビット単位で分割
+  each (let char, binary_str.to_arr()) {
+    current_segment = [current_segment char].join()
+    if current_segment.len == 6 {
+      segments.push(current_segment)
+      current_segment = ""
+    }
+  }
+  // 余りがあればパディング
+  if current_segment != "" {
+    current_segment = current_segment.pad_end(6, "0")
+    segments.push(current_segment)
+  }
+  return segments
+}
+
+// エンコード
+// param: input_str<str>
+// return: <str>
+@encode_base64(input_str) {
+  // UTF-8バイト配列に変換
+  let utf8_bytes = input_str.to_utf8_byte_arr()
+<:`utf8_bytes: {utf8_bytes}`
+  // UTF-8バイト配列をバイナリ文字列に変換
+  let binary_str = utf8_to_binary(utf8_bytes)
+<:`binary_str: {binary_str}`
+  // バイナリ文字列を6ビット単位に分割
+  let base64_segments = binary_to_base64_segments(binary_str)
+<:`base64_segments: {base64_segments}`
+  // 6ビットごとにBase64文字に変換
+  var base64_str = ""
+  each (let segment, base64_segments) {
+    let decimal = binary_to_utf8(segment.to_arr())
+    base64_str = [base64_str CHARAS_LIST[decimal]].join()
+  }
+<:`base64_str: {base64_str}`
+  // 必要に応じてパディング文字を追加
+  let padding = if utf8_bytes.len % 3 == 1 "==" else if utf8_bytes.len % 3 == 2 "=" else ""
+  base64_str = [base64_str padding].join()
+
+  return base64_str
+}
+
+@Game() {
+  var input_encode_text = ""
+  var input_decode_text = ""
+
+  // 初期化
+  @init() {
+    input_encode_text = "ﾋｬｰ"
+    input_decode_text = "776L772s772w"
+    render([
+      Ui:C:folder({
+        children: [
+          Ui:C:container({
+            children: [
+              Ui:C:textarea({
+                onInput: @(text) {
+                  input_encode_text = text
+                }
+                default: input_encode_text
+                label: "エンコードしたいテキスト"
+                caption: ""
+              })
+              Ui:C:button({
+                onClick: @() {
+                  Ui:get("enc_reult").update({
+                    text: [
+                      `$[x2 Now Loading]`
+                      `エンコード中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+                    ].join(Str:lf)
+                  })
+                  let encoded_str = encode_base64(input_encode_text)
+                  Ui:get("enc_reult").update({
+                    text: [
+                      `\`\`\`aiscript`
+                      encoded_str
+                      `\`\`\``
+                    ].join(Str:lf)
+                  })
+                }
+                text: "エンコードする"
+                primary: true
+              })
+              Ui:C:mfm({text: "結果"} )
+              Ui:C:mfm({}, "enc_reult")
+            ]
+            align: "left"
+          })
+        ]
+        title: "Base64エンコード"
+        opened: true
+      })
+      Ui:C:folder({
+        children: [
+          Ui:C:container({
+            children: [
+              Ui:C:textarea({
+                onInput: @(text) {
+                  input_decode_text = text
+                }
+                default: input_decode_text
+                label: "デコードしたいテキスト"
+                caption: ""
+              })
+              Ui:C:button({
+                onClick: @() {
+                  Ui:get("dec_reult").update({
+                    text: [
+                      `$[x2 Now Loading]`
+                      `デコード中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+                    ].join(Str:lf)
+                  })
+                  let decoded_str = decode_base64(input_decode_text)
+                  Ui:get("dec_reult").update({
+                    text: [
+                      `\`\`\`aiscript`
+                      decoded_str
+                      `\`\`\``
+                    ].join(Str:lf)
+                  })
+                }
+                text: "デコードする"
+                primary: true
+              })
+              Ui:C:mfm({text: "結果"} )
+              Ui:C:mfm({}, "dec_reult")
+            ]
+            align: "left"
+          })
+        ]
+        title: "Base64デコード"
+        opened: true
+      })
+    ])
+  }
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

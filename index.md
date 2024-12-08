@@ -30,6 +30,7 @@ Copyright (c) 2024 elysion
 - [さんまぶりカード](./page/submarin/9wpzr2j1d5.md)
 - [もらったリアクション](./page/submarin/9z0z43izkk.md)
 - [リバーシレコード](./page/submarin/a103wpk0sp.md)
+- [Base64エンコード・デコード](./page/submarin/a1bm82r6u2.md)
 
 ### msk.kitazawa.me
 デイリー

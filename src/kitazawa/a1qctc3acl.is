@@ -17,7 +17,8 @@ let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
   // トークン
   var token = null
   var note = null
-  
+  var fReplies = true
+
   // 初期化
   @init() {
     input_id = ""
@@ -54,30 +55,62 @@ let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
                   label: "ノートURL"
                   caption: "⚠ノートURL確認方法: ノートメニュー→リンクをコピー"
                 })
-                Ui:C:button({
-                  text: "検索する"
-                  onClick: @() {
-                    if input_id != "" {
-                      input_id = input_id.split("/").pop()
-                      note = Mk:api("notes/show", {
-                        noteId: input_id
-                      }, token)
-                      match Core:type(note) {
-                        "error" => {
-                          Mk:dialog("error", `ノートが見つかりませんでした`)
+                Ui:C:switch({
+                  onChange: @(enabled) {
+                    fReplies = enabled
+                  }
+                  default: fReplies
+                  label: "リプライを含める"
+                  caption: "⚠️OFFにするとリプライは除外"
+                })
+                Ui:C:buttons({
+                  buttons: [
+                    {
+                      text: "検索する(HTL)"
+                      onClick: @() {
+                        if input_id != "" {
+                          input_id = input_id.split("/").pop()
+                          note = Mk:api("notes/show", { noteId: input_id }, token)
+                          match Core:type(note) {
+                            "error" => { Mk:dialog("error", `ノートが見つかりませんでした`) }
+                            "obj" => { main("HTL") }
+                          }
                         }
-                        "obj" => {
-                          main()
+                      }
+                    },
+                    {
+                      text: "検索する(LTL)"
+                      onClick: @() {
+                        if input_id != "" {
+                          input_id = input_id.split("/").pop()
+                          note = Mk:api("notes/show", { noteId: input_id }, token)
+                          match Core:type(note) {
+                            "error" => { Mk:dialog("error", `ノートが見つかりませんでした`) }
+                            "obj" => { main("LTL") }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      text: "検索する(STL)"
+                      onClick: @() {
+                        if input_id != "" {
+                          input_id = input_id.split("/").pop()
+                          note = Mk:api("notes/show", { noteId: input_id }, token)
+                          match Core:type(note) {
+                            "error" => { Mk:dialog("error", `ノートが見つかりませんでした`) }
+                            "obj" => { main("STL") }
+                          }
                         }
                       }
                     }
-                  }
+                  ]
                 })
               ]
               align: "center"
             })
           ]
-          title: "指定のノートの前後のタイムライン(HTL)"
+          title: "指定のノートの前後のタイムライン"
         })
         Ui:C:container({
           children: [
@@ -109,7 +142,7 @@ let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
             Ui:C:button({
               text: `アクセストークンを削除`
               onClick: @() {
-                Mk:save(`@{USER_ID}/token`, null)
+                Mk:save(`@{USER_ID}/{PLAY_ID}/token`, null)
                 Mk:dialog("完了", [
                   `アクセストークンを削除しました`
                   `$[x2 :orenitehakaizumi::mimi_hate:]`
@@ -219,6 +252,9 @@ let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
         if note.text != null data.push(`{note.text}`)
         data.push(`@{note.renote.user.username}{if note.renote.user.host != null `@{note.renote.user.host}` else ""}`)
         data.push(`{note.renote.text}`)
+      } else if note.replyId != null {
+        data.push(`<small>@{note.user.username}{if note.user.host != null `@{note.user.host}` else ""}がリプライ</small>`)
+        if note.text != null data.push(`{note.text}`)
       } else {
         data.push(`<small>@{note.user.username}{if note.user.host != null `@{note.user.host}` else ""}がノート</small>`)
         if note.text != null data.push(`{note.text}`)
@@ -234,24 +270,45 @@ let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
     results.join(Str:lf)
   }
   // メイン処理
-  @main() {
-    let until_notes = Mk:api("notes/timeline", {
+  @main(tl_type) {
+    var until_notes = null
+    let until_param = {
       limit: 100,
       untilId: input_id,
       allowPartial: true,
       includeMyRenotes: true,
       includeRenotedMyNotes: true,
-      includeLocalRenotes: true
-    }, token)
-    until_notes.reverse()
-    let since_notes = Mk:api("notes/timeline", {
+      includeLocalRenotes: true,
+      withReplies: fReplies
+    }
+    var since_notes = null
+    let since_param = {
       limit: 100,
       sinceId: input_id,
       allowPartial: true,
       includeMyRenotes: true,
       includeRenotedMyNotes: true,
-      includeLocalRenotes: true
-    }, token)
+      includeLocalRenotes: true,
+      withReplies: fReplies
+    }
+
+    match tl_type {
+      "HTL" => {
+        until_notes = Mk:api("notes/timeline", until_param, token)
+        until_notes.reverse()
+        since_notes = Mk:api("notes/timeline", since_param, token)
+      }
+      "LTL" => {
+        until_notes = Mk:api("notes/local-timeline", until_param, token)
+        until_notes.reverse()
+        since_notes = Mk:api("notes/local-timeline", since_param, token)
+      }
+      "STL" => {
+        until_notes = Mk:api("notes/hybrid-timeline", until_param, token)
+        until_notes.reverse()
+        since_notes = Mk:api("notes/hybrid-timeline", since_param, token)
+      }
+    }
 
     render([
       Ui:C:container({
@@ -267,7 +324,7 @@ let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
                 align: "left"
               })
             ]
-            title: "100件前のHTL"
+            title: `100件前の{tl_type}`
             opened: false
           })
         ]
@@ -277,7 +334,7 @@ let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
         padding: 2 // 余白幅
         rounded: true // 角を丸く
       })
-      
+
       Ui:C:container({
         children: [
           Ui:C:folder({
@@ -313,7 +370,7 @@ let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
                 align: "left"
               })
             ]
-            title: "100件後のHTL"
+            title: `100件後の{tl_type}`
           })
         ]
         bgColor: "#00f1" // 背景色

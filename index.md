@@ -31,6 +31,7 @@ Copyright (c) 2024 elysion
 - [もらったリアクション](./page/submarin/9z0z43izkk.md)
 - [リバーシレコード](./page/submarin/a103wpk0sp.md)
 - [Base64エンコード・デコード](./page/submarin/a1bm82r6u2.md)
+- [前後のノート](./page/submarin/a1ssa83n24.md)
 
 ### msk.kitazawa.me
 デイリー
@@ -74,6 +75,7 @@ Copyright (c) 2024 elysion
 - [おまえんち](./page/kitazawa/a09kunsjku.md)
 - [タグ投稿数](./page/kitazawa/a0i0dzvf7z.md)
 - [リバーシレコード](./page/kitazawa/a103pp9bls.md)
+- [前後のノート](./page/kitazawa/a1qctc3acl.md)
 
 ### misskey.stream
 デイリー

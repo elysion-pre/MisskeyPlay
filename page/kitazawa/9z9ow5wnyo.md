@@ -8,6 +8,9 @@
 ⚠️本Playはアクセストークンが必要です  
 [アクセストークンの取得に関して](https://misskey-hub.net/ja/docs/for-developers/api/token/)
 
+### 必要アクセストークン
+- アカウントの情報を見る 
+
 > [!WARNING]
 > アクセストークンは他人に知られないようにしてください
 

@@ -1,0 +1,332 @@
+/// @ 0.19.0
+// 前後のノート
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+// description:
+// アクセストークンの取得に関して
+// 下記公式のドキュメントを参照
+// https://misskey-hub.net/ja/docs/for-developers/api/token/
+
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/a1qctc3acl`
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
+
+@Game() {
+  var input_id = ""
+  // トークン
+  var token = null
+  var note = null
+  
+  // 初期化
+  @init() {
+    input_id = ""
+    token_check()
+  }
+  // 投稿範囲の色
+  // param: visibility<str>
+  // return: <str>
+  @getNoteVisibiltyColor(visibility) {
+    var ret = ""
+    match visibility {
+      "public" => { ret = "00008b" }
+      "home" => { ret = "006400" }
+      "followers" => { ret = "8b0000" }
+      "specified" => { ret = "556b2f" }
+    }
+    ret
+  }
+  // トークン確認
+  @token_check() {
+    token = Mk:load(`@{USER_ID}/{PLAY_ID}/token`)
+//<:`token: {token}`
+    if (token != null && token != "") {
+      render([
+        Ui:C:folder({
+          children: [
+            Ui:C:container({
+              children: [
+                Ui:C:textInput({
+                  onInput: @(text) {
+                    input_id = text
+                  }
+                  default: input_id
+                  label: "ノートURL"
+                  caption: "⚠ノートURL確認方法: ノートメニュー→リンクをコピー"
+                })
+                Ui:C:button({
+                  text: "検索する"
+                  onClick: @() {
+                    if input_id != "" {
+                      input_id = input_id.split("/").pop()
+                      note = Mk:api("notes/show", {
+                        noteId: input_id
+                      }, token)
+                      match Core:type(note) {
+                        "error" => {
+                          Mk:dialog("error", `ノートが見つかりませんでした`)
+                        }
+                        "obj" => {
+                          main()
+                        }
+                      }
+                    }
+                  }
+                })
+              ]
+              align: "center"
+            })
+          ]
+          title: "指定のノートの前後のタイムライン(HTL)"
+        })
+        Ui:C:container({
+          children: [
+            Ui:C:folder({
+              children: [
+                Ui:C:mfm({
+                  text: [
+                    `1.アクセストークンを削除`
+                    `　本Playの【アクセストークンを削除】ボタンを押下`
+                    `2.[設定->API]({SERVER_URL}/settings/api)`
+                    `　【アクセストークンの管理】ボタンを押下`
+                    `3.削除`
+                    `　作成したアクセストークンを【🗑️(ゴミ箱)】ボタンを押下し、削除完了`
+                  ].join(Str:lf)
+                })
+              ]
+              title: "アクセストークンの削除手順"
+              opened: true
+            })
+          ]
+          bgColor: "#ba8b55" // 背景色
+          borderColor: "#000" // 枠の色
+          borderStyle: "dashed" // 枠の柄
+          padding: 2 // 余白幅
+          rounded: true // 角を丸く
+        })
+        Ui:C:container({
+          children: [
+            Ui:C:button({
+              text: `アクセストークンを削除`
+              onClick: @() {
+                Mk:save(`@{USER_ID}/token`, null)
+                Mk:dialog("完了", [
+                  `アクセストークンを削除しました`
+                  `$[x2 :orenitehakaizumi::mimi_hate:]`
+                ].join(Str:lf), "success")
+                token_check()
+              }
+            })
+          ]
+          align: "center"
+        })
+      ])
+    } else {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:textInput({
+              onInput: @(text) {
+                token = text
+              }
+              default: ""
+              label: "アクセストークンを入力してください"
+            })
+            Ui:C:button({
+              text: `アクセストークンを保存`
+              onClick: @() {
+                if (token != null && token != "") {
+                  Mk:save(`@{USER_ID}/{PLAY_ID}/token`, token)
+                  Mk:dialog("完了", [
+                    `アクセストークンを保存しました`
+                    `$[x2 :orenitekaishuzumi::mimi_heart:]`
+                    `<small>⚠️アクセストークンは他人に知られないようにしてください</small>`
+                  ].join(Str:lf), "success")
+                  token_check()
+                }
+              }
+            })
+          ]
+          align: "center"
+        })
+        Ui:C:container({
+          children: [
+            Ui:C:folder({
+              children: [
+                Ui:C:mfm({
+                  text: [
+                    `1.[設定->API]({SERVER_URL}/settings/api)`
+                    `　【アクセストークンの発行】ボタンを押下`
+                    `2.名前`
+                    `　アクセストークンの名前を入力`
+                    `3.権限`
+                    `　【アカウントの情報を見る】を有効に`
+                    `4.発行`
+                    `　右上の【✔️】を押下し発行`
+                    `　確認コードが表示されるのでコピー`
+                    `5.アクセストークンを保存`
+                    `　本Playにペーストし【アクセストークンを保存】ボタンを押下し、保存完了`
+                  ].join(Str:lf)
+                })
+              ]
+              title: "アクセストークンの作成・保存手順"
+              opened: true
+            })
+          ]
+          bgColor: "#89e555" // 背景色
+          borderColor: "#000" // 枠の色
+          borderStyle: "solid" // 枠の柄
+          padding: 2 // 余白幅
+          rounded: true // 角を丸く
+        })
+        Ui:C:container({
+          children: [
+            Ui:C:folder({
+              children: [
+                Ui:C:mfm({
+                  text: [
+                    `1.アクセストークンを削除`
+                    `　本Playの【アクセストークンを削除】ボタンを押下`
+                    `2.[設定->API]({SERVER_URL}/settings/api)`
+                    `　【アクセストークンの管理】ボタンを押下`
+                    `3.削除`
+                    `　作成したアクセストークンを【🗑️(ゴミ箱)】ボタンを押下し、削除完了`
+                  ].join(Str:lf)
+                })
+              ]
+              title: "アクセストークンの削除手順"
+              opened: false
+            })
+          ]
+          bgColor: "#ba8b55" // 背景色
+          borderColor: "#000" // 枠の色
+          borderStyle: "dashed" // 枠の柄
+          padding: 2 // 余白幅
+          rounded: true // 角を丸く
+        })
+      ])
+    }
+  }
+  // ノート内容をいい感じにして返す
+  // param: notes<arr>
+  // return: <str>
+  @getResults(notes) {
+    let results = []
+    each (let note, notes) {
+      let data = []
+      if note.renoteId != null {
+        data.push(`<small>@{note.user.username}{if note.user.host != null `@{note.user.host}` else ""}がリノート</small>`)
+        if note.text != null data.push(`{note.text}`)
+        data.push(`@{note.renote.user.username}{if note.renote.user.host != null `@{note.renote.user.host}` else ""}`)
+        data.push(`{note.renote.text}`)
+      } else {
+        data.push(`<small>@{note.user.username}{if note.user.host != null `@{note.user.host}` else ""}がノート</small>`)
+        if note.text != null data.push(`{note.text}`)
+      }
+      if note.files.len > 0 {
+        each (let file, note.files) {
+          data.push(`{file.url}`)
+        }
+      }
+      data.push(`[$[unixtime {(Date:parse(note.createdAt) / 1000)}]]({SERVER_URL}/notes/{note.id})`)
+      results.push(`$[border.width=2,radius=5,color={getNoteVisibiltyColor(note.visibility)} {data.join(Str:lf)}]{Str:lf}`)
+    }
+    results.join(Str:lf)
+  }
+  // メイン処理
+  @main() {
+    let until_notes = Mk:api("notes/timeline", {
+      limit: 100,
+      untilId: input_id,
+      allowPartial: true,
+      includeMyRenotes: true,
+      includeRenotedMyNotes: true,
+      includeLocalRenotes: true
+    }, token)
+    until_notes.reverse()
+    let since_notes = Mk:api("notes/timeline", {
+      limit: 100,
+      sinceId: input_id,
+      allowPartial: true,
+      includeMyRenotes: true,
+      includeRenotedMyNotes: true,
+      includeLocalRenotes: true
+    }, token)
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:folder({
+            children: [
+              Ui:C:container({
+                children: [
+                  Ui:C:mfm({
+                    text: getResults(until_notes)
+                  })
+                ]
+                align: "left"
+              })
+            ]
+            title: "100件前のHTL"
+            opened: false
+          })
+        ]
+        bgColor: "#f001" // 背景色
+        borderColor: "#f00" // 枠の色
+        borderStyle: "solid" // 枠の柄
+        padding: 2 // 余白幅
+        rounded: true // 角を丸く
+      })
+      
+      Ui:C:container({
+        children: [
+          Ui:C:folder({
+            children: [
+              Ui:C:container({
+                children: [
+                  Ui:C:mfm({
+                    text: getResults([note])
+                  })
+                ]
+                align: "left"
+              })
+            ]
+            title: "元ノート"
+          })
+        ]
+        bgColor: "#0f01" // 背景色
+        borderColor: "#0f0" // 枠の色
+        borderStyle: "solid" // 枠の柄
+        padding: 2 // 余白幅
+        rounded: true // 角を丸く
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:folder({
+            children: [
+              Ui:C:container({
+                children: [
+                  Ui:C:mfm({
+                    text: getResults(since_notes)
+                  })
+                ]
+                align: "left"
+              })
+            ]
+            title: "100件後のHTL"
+          })
+        ]
+        bgColor: "#00f1" // 背景色
+        borderColor: "#00f" // 枠の色
+        borderStyle: "solid" // 枠の柄
+        padding: 2 // 余白幅
+        rounded: true // 角を丸く
+      })
+    ])
+  }
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

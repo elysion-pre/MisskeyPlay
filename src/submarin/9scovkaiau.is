@@ -25,7 +25,7 @@ let PLAY_URL = eval {
   else {
     match SERVER_URL {
       "https://submarin.online" => { `{SERVER_URL}/play/9scovkaiau` }
-//      "https://msk.kitazawa.me" => { `{SERVER_URL}/play/` }
+      "https://msk.kitazawa.me" => { `{SERVER_URL}/play/a1zzmq21ms` }
       "https://misskey.stream" => { `{SERVER_URL}/play/9uuq0pqprccq00tn` }
       * => ""
     }

@@ -53,6 +53,7 @@ Copyright (c) 2024 elysion
 -  [きたざわ？みすき](./page/kitazawa/9jwcu4es7u.md)
 - [きたざわシャツ](./page/kitazawa/9k0ox0zb4p.md)
 - [きたざわスロット](./page/kitazawa/9n1sj9k890.md)
+- [きたざわスロット(難)](./page/kitazawa/a1zzmq21ms)
 - [きたざわ俳句](./page/kitazawa/9oi9xawja0.md)
 - [ふらっぴーきたざわ](./page/kitazawa/9p6mbptl7d.md)
 - [カスタム絵文字サークル](./page/kitazawa/9pryd9gakh.md)

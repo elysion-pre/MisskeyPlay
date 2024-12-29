@@ -63,7 +63,6 @@ Copyright (c) 2024 elysion
 - [ノアーﾉﾚを探せ](./page/kitazawa/9r4dbonkzl.md)
 - [おきんたま戦隊](./page/kitazawa/9rc0j6qzt3.md)
 - [俺のｱﾂｱﾂの😚❤️KISS](./page/kitazawa/9rn1fjsb6j.md)
-- [他人のｱﾂｱﾂの😚❤️KISS](./page/kitazawa/9rneqzbgn8.md)
 - [気まぐれカスタム絵文字](./page/kitazawa/9rzua8426v.md)
 - [あなたの戦闘力](./page/kitazawa/9v7lf1q091.md)
 - [○ルト○ルト](./page/kitazawa/9vudzmzjub.md)
@@ -102,3 +101,4 @@ Copyright (c) 2024 elysion
 それ以外
 - [口金ついてますよ](./page/kochudaho/a0g8we6nux.md)
 - [あなたの戦闘力](./page/kochudaho/a0xxcgegh1.md)
+- [俺のｱﾂｱﾂの😚❤️KISS](./page/kochudaho/a2cy9pcmij.md)

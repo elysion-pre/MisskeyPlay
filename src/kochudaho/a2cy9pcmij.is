@@ -6,7 +6,7 @@
 
 let PLAY_NAME = "ｱﾂｱﾂの😚❤️:kiss:"
 let PLAY_TAG = "#ore_no_atsu_atsu_kiss"
-let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9ui0o7j7d12304zk`
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/a2cy9pcmij`
 
 let RANK_EMOJI = [
   "🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"
@@ -23,7 +23,7 @@ let RANK_EMOJI = [
         Ui:C:container({
           children: [
             Ui:C:mfm({
-              text: `$[x4 :nanasi:]`
+              text: `$[x4 :sapporo_koime_no_lemon_sour_gyomu1800:]`
             })
           ]
           align: "center"
@@ -31,7 +31,7 @@ let RANK_EMOJI = [
       ])
       Mk:dialog("エラー", [
         `ユーザーIDが見つかりませんでした`
-        `$[x2 :nanashi_warui:]`
+        `$[x2 :kochudaho_kuchi_kintama::a_n:]`
         `ログインしてから遊んでみてねー👋`
       ].join(Str:lf), "error")
     } else {
@@ -204,7 +204,7 @@ let RANK_EMOJI = [
         Ui:C:container({
           children: [
             Ui:C:mfm({
-              text: `$[x4 :nanasi:]`
+              text: `$[x4 :sapporo_koime_no_lemon_sour_gyomu1800:]`
             })
           ]
           align: "center"
@@ -212,7 +212,7 @@ let RANK_EMOJI = [
       ])
       Mk:dialog("エラー", [
         "直近1000件のノート内にリプライ(返信)はありませんでした。"
-        `$[x2 :nanashi_warui:]`
+        `$[x2 :kochudaho_kuchi_kintama::sonnannaiyo:]`
         `たくさんリプライしてから遊んでみてねー👋`
       ].join(Str:lf), "error")
     }

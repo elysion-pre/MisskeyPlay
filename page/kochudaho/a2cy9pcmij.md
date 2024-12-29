@@ -15,11 +15,11 @@
 
 ## Play URL
 
-[https://submarin.online/play/9scr3d3ljh](https://submarin.online/play/9scr3d3ljh)
+[https://mi.kochudaho.me/play/a2cy9pcmij](https://mi.kochudaho.me/play/a2cy9pcmij)
 
 ## ソース
 
-[9scr3d3ljh.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/submarin/9scr3d3ljh.is)
+[a2cy9pcmij.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/kochudaho/a2cy9pcmij.is)
 
 ----
 

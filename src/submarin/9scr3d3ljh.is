@@ -1,260 +1,225 @@
-/// @ 0.18.0
+/// @ 0.19.0
 // ｱﾂｱﾂの😚❤️KISS
 // Copyright (c) 2024 @elysion
 // This script is licensed under the MIT
 // https://opensource.org/licenses/mit-license.php
 
-let PLAY_NAME = eval {
-  match SERVER_URL {
-    "https://submarin.online" => { "ｱﾂｱﾂの😚❤️:kiss:" }
-    "https://msk.kitazawa.me" => { "ｱﾂｱﾂの😚❤️KISS" }
-    "https://misskey.stream" => { "ｱﾂｱﾂの😚❤️:kiss:" }
-    * => { `ｱﾂｱﾂの😚❤️KISS` }
-  }
-}
-let TAG_NAME = "#ore_no_atsu_atsu_kiss"
-let PLAY_URL = eval {
-  if exists THIS_URL THIS_URL
-  else {
-    match SERVER_URL {
-      "https://submarin.online" => { `{SERVER_URL}/play/9scr3d3ljh` }
-      "https://msk.kitazawa.me" => { `{SERVER_URL}/play/9rn1fjsb6j` }
-      "https://misskey.stream" => { `{SERVER_URL}/play/9ui0o7j7d12304zk` }
-      * => ""
-    }
-  }
-}
+let PLAY_NAME = "ｱﾂｱﾂの😚❤️:kiss:"
+let PLAY_TAG = "#ore_no_atsu_atsu_kiss"
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9scr3d3ljh`
 
-:: Arr {
-  // ランダムで配列の値を返す
-  // param: array<arr>
-  // return: <arr[0~(arr.len - 1)]>
-  @randomSelect(array) {
-    array[random(0, (array.len - 1))]
-  }
-  // 指定の配列を削除した配列を返す
-  // param: array<arr>
-  // param: index<num>
-  // return: <arr>
-  @splice(array, index) {
-    array.slice(0, index).concat(array.slice((index + 1), array.len))
-  }
-}
-
-:: Ui {
-  // 指定UIのhidden処理
-  // param: name<str>
-  // param: f<bool>
-  @hidden(name, f) {
-    Ui:get(name).update({
-      hidden: f
-    })
-  }
-  // 指定UIのdisabled処理
-  // param: name<str>
-  // param: f<bool>
-  @disabled(name, f) {
-    Ui:get(name).update({
-      disabled: f
-    })
-  }
-}
-
-// ユーザーデータ
-// param: id<str>
-@User(id) {
-  let this = {
-    data: null
-    // コンストラクタ
-    // param: id<str>
-    constructor: @(id) {
-      this.data = Mk:api("users/show", {
-        userId: id
-      })
-      this
-    }
-    // id取得
-    // return: id<str>
-    getId: @() {
-      this.data.id
-    }
-    // host取得
-    // return: host<str>
-    getHost: @() {
-      this.data.host
-    }
-    // 名前取得
-    // return: username<str>
-    getUsername: @() {
-      this.data.username
-    }
-    // 名前取得
-    // return: name<str>
-    getName: @() {
-      // 名前が未入力ならusername(@hoge)を返す
-      if (this.data.name == null) {
-        return this.getUsername()
-      }
-      return this.data.name
-    }
-    // メンション名取得(@username@host)
-    // return: name<str>
-    getMentionName: @() {
-      match this.getHost() {
-        null => { return `@{this.getUsername()}` }
-        * => { return `@{this.getUsername()}@{this.getHost()}` }
-      }
-    }
-    // プロフィールURL取得
-    // return: name<str>
-    getProfileURL: @() {
-      match this.getHost() {
-        null => { return `{SERVER_URL}/@{this.getUsername()}` }
-        * => { return `https://{this.getHost()}/@{this.getUsername()}` }
-      }
-    }
-    // idが自分かどうか
-    // param: id<str>
-    // return: f<bool>
-    isYourself: @(id) {
-      if (this.data.id == id) {
-        return true
-      } else {
-        return false
-      }
-    }
-  }
-  this.constructor(id)
-}
+let RANK_EMOJI = [
+  "🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"
+]
 
 @Game() {
-  let player = User(USER_ID)
-
+  var input_id = ""
+  var fBotExclusion = false
+  var fLocalOnly = false
+  // 初期化
+  @init() {
+    if USER_ID == null {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: `$[x4 :destroying_hisubway:]`
+            })
+          ]
+          align: "center"
+        })
+      ])
+      Mk:dialog("エラー", [
+        `ユーザーIDが見つかりませんでした`
+        `$[x2 :kaikigenshou::bakuhatsu_sakananoonigiri:]`
+        `ログインしてから遊んでみてねー👋`
+      ].join(Str:lf), "error")
+    } else {
+      input_id = USER_ID
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:textInput({
+              onInput: @(text) {
+                input_id = text
+              }
+              default: input_id
+              label: "ユーザーID"
+              caption: "⚠ユーザーID確認方法: プロフィール→rawタブ"
+            })
+          ]
+        })
+        Ui:C:folder({
+          children: [
+            Ui:C:switch({
+              onChange: @(enabled) {
+                fBotExclusion = enabled
+              }
+              default: false
+              label: "bot除外"
+              caption: "⚠️ONにするとbotは対象外"
+            })
+            Ui:C:switch({
+              onChange: @(enabled) {
+                fLocalOnly = enabled
+              }
+              default: false
+              label: "ローカルユーザーのみ"
+              caption: "⚠️ONにするとローカルユーザーのみが対象"
+            })
+          ]
+          title: "オプション"
+        })
+        Ui:C:container({
+          children: [
+            Ui:C:button({
+              onClick: main
+              text: "確認する"
+              primary: true
+            })
+          ]
+          align: "center"
+        })
+      ])
+    }
+  }
   // メイン処理
   @main() {
-    // api: users/get-frequently-replied-users
-    // ユーザーが頻繁にリプライを送信しているユーザーを取得します。最新の1000件のノートを対象に集計を行います。
-    // https://legacy.misskey-hub.net/docs/api/endpoints/users/get-frequently-replied-users.html
-    let replied_users = Mk:api("users/get-frequently-replied-users", {
-      userId: player.getId(),
-      limit: 11
-    })
-    let rank_emoji = [
-      "🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"
-    ]
-    var count = 0
-    let user_list = []
-    if (replied_users.len > 0) {
-      each (let ru, replied_users) {
-        if (count > 9) break
-        if (ru.user.isSuspended) continue
-//        if (ru.user.isBot) continue
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `頻繁にリプライ(返信)をしているユーザーを取得中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+              `<small>最新の1000件のノートを対象に集計を行います</small>`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
 
-        let data = []
-        let replied_user = User(ru.user.id)
+    // ユーザーが頻繁にリプライ(返信)を送信しているユーザーを取得します。
+    // 最新の1000件のノートを対象に集計を行います。
+    let replied_users = Mk:api("users/get-frequently-replied-users", {
+      userId: input_id,
+      limit: 100
+    })
+    
+    var count = 0
+    let ranking_list = []
+    let not_ranked_list = []
+    if replied_users.len > 0 {
+      each (let user_data, replied_users) {
+        // 凍結は除外
+        if user_data.user.isSuspended continue
+        // bot除外
+        if fBotExclusion && user_data.user.isBot continue
         // 自身は除外
-        if ((!player.isYourself(replied_user.getId())) && (count < 10)) {
-          data.push(`{rank_emoji[count]}: `)
-          if (count == 0) {
-            data.push("$[jelly ")
+        if user_data.user.id == input_id continue
+        // ローカルのみ
+        if fLocalOnly && user_data.user.host != null continue
+
+        // 1位から10位
+        if count < 10 {
+          if count == 0 {
+            ranking_list.push(`$[jelly {RANK_EMOJI[count]}: ?[<plain>{if user_data.user.name == null user_data.user.username else user_data.user.name}</plain>]({SERVER_URL}/@{user_data.user.username}{if user_data.user.host != null `@{user_data.user.host}` else ""})]`)
+          } else {
+            ranking_list.push(`{RANK_EMOJI[count]}: ?[<plain>{if user_data.user.name == null user_data.user.username else user_data.user.name}</plain>]({SERVER_URL}/@{user_data.user.username}{if user_data.user.host != null `@{user_data.user.host}` else ""})`)
           }
-          data.push(`?[{replied_user.getName()}]({replied_user.getProfileURL()})`)
-          if (count == 0) {
-            data.push("]")
-          }
-          user_list.push(data.join())
           count += 1
+        } else {
+          // 11位以降
+          not_ranked_list.push(`{count + 1}: ?[<plain>{if user_data.user.name == null user_data.user.username else user_data.user.name}</plain>]({SERVER_URL}/@{user_data.user.username}{if user_data.user.host != null `@{user_data.user.host}` else ""})`)
+          count += 1
+        } 
+      }
+      if fBotExclusion {
+        if fLocalOnly {
+          ranking_list.push("<small>bot除外, ローカルユーザーのみ</small>")
+        } else {
+          ranking_list.push("<small>bot除外</small>")
+        }
+      } else {
+        if fLocalOnly {
+          ranking_list.push("<small>ローカルユーザーのみ</small>")
         }
       }
-      // 結果表示用テキスト
-      let resultMfm = [
-        user_list.join(Str:lf)
-      ].join(Str:lf)
-
-      // 結果表示UI更新
-      Ui:get("resultMfm").update({
-       text: resultMfm
-      })
 
       // 投稿用テキスト
       let postText = [
-        `{player.getName()}の{PLAY_NAME}は`
-        resultMfm
-        TAG_NAME
+        `<plain>{if USER_NAME == null USER_USERNAME else USER_NAME}</plain>の{PLAY_NAME}は`
+        ranking_list.join(Str:lf)
+        PLAY_TAG
         PLAY_URL
       ].join(Str:lf)
-
-      // 投稿UI更新
-      Ui:get("postFormButton").update({
-        text: "投稿する"
-        form: {
-          text: postText
-        }
-        primary: true
-        rounded: true
-      })
-
-      Ui:hidden("loading_area", true)
-      Ui:hidden("main_area", false)
-      Ui:hidden("post_area", false)
-
+      
+      let render_components = []
+      render_components.push(
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: ranking_list.join(Str:lf)
+            })
+          ]
+        })
+      )
+      // 対象が自分なら投稿可能
+      if input_id == USER_ID {
+        render_components.push(
+          Ui:C:container({
+            children: [
+              Ui:C:postFormButton({
+                text: "投稿する"
+                form: {
+                  text: postText
+                }
+                primary: true
+                rounded: true
+              })
+            ]
+            align: "center"
+          })
+        )
+      }
+      render_components.push(
+        Ui:C:container({
+          children: [
+            Ui:C:folder({
+              children: [
+                Ui:C:mfm({
+                  text: not_ranked_list.join(Str:lf)
+                })
+              ]
+              title: "11位以降のランキング"
+            })
+          ]
+        })
+      )
+      render(render_components)
     } else {
-      // 結果表示用テキスト
-      let resultMfm = [
-        "<center>"
-        "⚠直近1000件のノート内にリプライはありませんでした。"
-        "</center>"
-      ].join(Str:lf)
 
-      // 結果表示UI更新
-      Ui:get("resultMfm").update({
-        text: resultMfm
-      })
-
-      Ui:hidden("loading_area", true)
-      Ui:hidden("main_area", false)
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: `$[x4 :destroying_hisubway:]`
+            })
+          ]
+          align: "center"
+        })
+      ])
+      Mk:dialog("エラー", [
+        "直近1000件のノート内にリプライ(返信)はありませんでした。"
+        `$[x2 :nai::kanashii_sakananoonigiri:]`
+        `たくさんリプライしてから遊んでみてねー👋`
+      ].join(Str:lf), "error")
     }
   }
-  main()
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
 }
-
-Ui:render([
-  Ui:C:container({
-    children: [
-      Ui:C:mfm({
-        text: `$[x2 {PLAY_NAME}]`
-      }, "titleMfm")
-    ]
-    align: "center"
-  }, "title_area")
-  Ui:C:container({
-    children: [
-      Ui:C:mfm({
-        text: `$[x2 $[bounce Now Loading...]]`
-      }, "loadingMfm")
-    ]
-    align: "center"
-  } "loading_area")
-  Ui:C:container({
-    children: [
-      Ui:C:mfm({}, "resultMfm")
-    ]
-//    align: "center"
-    hidden: true
-  }, "main_area")
-  Ui:C:container({
-    children: [
-      Ui:C:postFormButton({}, "postFormButton")
-    ]
-    align: "center"
-    hidden: true
-  }, "post_area")
-])
-if (USER_ID != null) {
-  Game()
-} else {
-  Mk:dialog("", [
-    "ユーザーIDが見つかりませんでした"
-    "ログインしてから遊んでみてね"
-  ].join(Str:lf), "error")
-}
+Game()

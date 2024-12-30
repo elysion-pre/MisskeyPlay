@@ -1,0 +1,165 @@
+/// @ 0.19.0
+// きたざわノーツランキング
+// Copyright (c) 2024 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/a2e7hul6sw`
+let PLAY_TAG = "#KITAZAWA_NOTES_RANKING"
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
+
+let RANK_EMOJI = [
+  "🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"
+]
+
+@Game() {
+  var users = []
+
+  // オブジェクト型の配列内の特定のidが一致する配列内のインデックスの取得
+  // param: arr<arr>
+  // param: targetId<str>
+  // return: <num>
+  @findIndexById(arr, targetId) {
+    var index = -1
+    var i = 0
+    each (let obj, arr) {
+      if obj.id == targetId {
+        index = i
+        break
+      }
+      i += 1
+    }
+    return index
+  }
+  @init() {
+    users = []
+    
+    if USER_ID == null {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: `$[x4 :GoBack:]`
+            })
+          ]
+          align: "center"
+        })
+      ])
+      Mk:dialog("エラー", [
+        `ユーザーIDが見つかりませんでした`
+        `$[x2 :fushiginakotomoarumondesuna::mimi_hate:]`
+        `ログインしてから遊んでみてねー👋`
+      ].join(Str:lf), "error")
+    } else {
+      main()
+    }
+  }
+  @main() {
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `ユーザーデータ読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+              `<small>⚠️読み込み時間はサーバー内のユーザー数に比例</small>`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    loop {
+      let works = Mk:api("users", {
+        limit: 100
+        offset: users.len
+      })
+      if works.len == 0 break
+
+      users = users.concat(works)
+      if (works.len < 100) break
+    }
+    // notesCountが多い順でソート
+    users.sort(@(a, b) {
+      (b.notesCount - a.notesCount)
+    })
+
+    let index = findIndexById(users, USER_ID)
+
+    var count = 0
+    let ranking_list = []
+    if users.len > 0 {
+      each (let user, users) {
+        var mfm = ""
+        // 1位から10位
+        if count < 10 {
+          mfm = `{RANK_EMOJI[count]}: ?[<plain>{if user.name == null user.username else user.name}</plain>]({SERVER_URL}/@{user.username}{if user.host != null `@{user.host}` else ""}), {user.notesCount}`
+          count += 1
+        } else {
+          // 11位以降
+          mfm = `{count + 1}: ?[<plain>{if user.name == null user.username else user.name}</plain>]({SERVER_URL}/@{user.username}{if user.host != null `@{user.host}` else ""}), {user.notesCount}`
+          count += 1
+        }
+        if user.id == USER_ID mfm = ["$[jelly " mfm "]"].join()
+        ranking_list.push(mfm)
+
+        if count > 99 break
+      }
+    }
+
+    // 結果表示用
+    let resultMfm = [
+      `<plain>{if USER_NAME == null USER_USERNAME else USER_NAME}</plain>のノーツ数は`
+      `$[fg.color=f00 ***{index + 1}***]位`
+      `<small>{index + 1}/{users.len}人</small>`
+      `<small>{users[index].notesCount}ノーツ</small>`
+    ].join(Str:lf)
+
+    // 投稿用テキスト
+    let postText = [
+      `<center>`
+      `<plain>{if USER_NAME == null USER_USERNAME else USER_NAME}</plain>のノーツ数は`
+      `$[fg.color=f00 ***{index + 1}***]位`
+      PLAY_URL
+      PLAY_TAG
+      `</center>`
+    ].join(Str:lf)
+    
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: resultMfm
+          })
+          Ui:C:postFormButton({
+            text: "投稿する"
+            form: {
+              text: postText
+            }
+            primary: true
+            rounded: true
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:folder({
+            children: [
+              Ui:C:mfm({
+                text: ranking_list.join(Str:lf)
+              })
+            ]
+            title: "ノーツランキング(100位まで)"
+          })
+        ]
+      })
+    ])
+  }
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

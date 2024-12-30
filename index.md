@@ -76,6 +76,7 @@ Copyright (c) 2024 elysion
 - [タグ投稿数](./page/kitazawa/a0i0dzvf7z.md)
 - [リバーシレコード](./page/kitazawa/a103pp9bls.md)
 - [前後のノート](./page/kitazawa/a1qctc3acl.md)
+- [きたざわノーツランキング](./page/kitazawa/a2e7hul6sw.md)
 
 ### misskey.stream
 デイリー

@@ -32,6 +32,7 @@ Copyright (c) 2024 elysion
 - [リバーシレコード](./page/submarin/a103wpk0sp.md)
 - [Base64エンコード・デコード](./page/submarin/a1bm82r6u2.md)
 - [前後のノート](./page/submarin/a1ssa83n24.md)
+- [おくったリアクション](./page/submarin/a3tpktydkp.md)
 
 ### msk.kitazawa.me
 デイリー
@@ -77,6 +78,7 @@ Copyright (c) 2024 elysion
 - [リバーシレコード](./page/kitazawa/a103pp9bls.md)
 - [前後のノート](./page/kitazawa/a1qctc3acl.md)
 - [きたざわノーツランキング](./page/kitazawa/a2e7hul6sw.md)
+- [おくったリアクション](./page/kitazawa/a3weaufiv6.md)
 
 ### misskey.stream
 デイリー
@@ -93,6 +95,7 @@ Copyright (c) 2024 elysion
 - [Streamカード](./page/stream/9wpztb1yxtf10ca6.md)
 - [もらったリアクション](./page/stream/9z0zshdmpatd06jr.md)
 - [リバーシレコード](./page/stream/a103xv0hnlxp003s.md)
+- [おくったリアクション](./page/stream/a3wfg7qg62si0124.md)
 
 ### mi.kochudaho.me
 デイリー
@@ -103,3 +106,5 @@ Copyright (c) 2024 elysion
 - [口金ついてますよ](./page/kochudaho/a0g8we6nux.md)
 - [あなたの戦闘力](./page/kochudaho/a0xxcgegh1.md)
 - [俺のｱﾂｱﾂの😚❤️KISS](./page/kochudaho/a2cy9pcmij.md)
+- [もらったリアクション](./page/kochudaho/a3wft028sy.md)
+- [おくったリアクション](./page/kochudaho/a3wfvmqzt1.md)

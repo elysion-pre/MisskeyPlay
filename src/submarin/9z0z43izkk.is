@@ -214,7 +214,7 @@ let PLAY_TAG = "#もらったリアクション"
 
       Mk:dialog("エラー", [
         `{info_text}のノートへのリアクションが見つかりませんでした`
-        `$[x2 :kanashiiyo::mimi_hate:]`
+        `$[x2 :nai::kanashii_sakananoonigiri:]`
         `投稿してリアクションもらえるといいね！`
       ].join(Str:lf), "error")
     } else {

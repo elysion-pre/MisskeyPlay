@@ -29,7 +29,7 @@ let PLAY_TAG = "#おくったリアクション"
         Ui:C:container({
           children: [
             Ui:C:mfm({
-              text: `$[x4 :GoBack:]`
+              text: `$[x4 :nanasi:]`
             })
           ]
           align: "center"
@@ -164,8 +164,8 @@ let PLAY_TAG = "#おくったリアクション"
           children: [
             Ui:C:mfm({
               text: [
-                `$[x4 :GoBack:]`
-                `?[設定 -> プライバシー](https://msk.kitazawa.me/settings/privacy)`
+                `$[x4 :nanasi:]`
+                `?[設定 -> プライバシー]({SERVER_URL}/settings/privacy)`
               ].join(Str:lf)
             })
           ]
@@ -176,7 +176,7 @@ let PLAY_TAG = "#おくったリアクション"
       Mk:dialog(users_reactions.info.code, [
         users_reactions.info.message
         `$[x2 :nanashi_warui::stream:]`
-        `?[設定 -> プライバシー](https://msk.kitazawa.me/settings/privacy)から`
+        `?[設定 -> プライバシー]({SERVER_URL}/settings/privacy)から`
         `【リアクション一覧を公開する】をONにしてください`
       ].join(Str:lf), "error")
       

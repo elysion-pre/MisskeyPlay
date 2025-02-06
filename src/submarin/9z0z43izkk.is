@@ -30,7 +30,7 @@ let PLAY_TAG = "#もらったリアクション"
         Ui:C:container({
           children: [
             Ui:C:mfm({
-              text: `$[x4 :GoBack:]`
+              text: `$[x4 :destroying_hisubway:]`
             })
           ]
           align: "center"

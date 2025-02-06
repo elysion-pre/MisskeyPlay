@@ -30,7 +30,7 @@ let PLAY_TAG = "#もらったリアクション"
         Ui:C:container({
           children: [
             Ui:C:mfm({
-              text: `$[x4 :GoBack:]`
+              text: `$[x4 :sapporo_koime_no_lemon_sour_gyomu1800:]`
             })
           ]
           align: "center"
@@ -38,7 +38,7 @@ let PLAY_TAG = "#もらったリアクション"
       ])
       Mk:dialog("エラー", [
         `ユーザーIDが見つかりませんでした`
-        `$[x2 :fushiginakotomoarumondesuna::mimi_hate:]`
+        `$[x2 :kochudaho_kuchi_kintama::sonnannaiyo:]`
         `ログインしてから遊んでみてねー👋`
       ].join(Str:lf), "error")
     } else {
@@ -214,7 +214,7 @@ let PLAY_TAG = "#もらったリアクション"
 
       Mk:dialog("エラー", [
         `{info_text}のノートへのリアクションが見つかりませんでした`
-        `$[x2 :kanashiiyo::mimi_hate:]`
+        `$[x2 :kochudaho_kuchi_kintama::sonnannaiyo:]`
         `投稿してリアクションもらえるといいね！`
       ].join(Str:lf), "error")
     } else {

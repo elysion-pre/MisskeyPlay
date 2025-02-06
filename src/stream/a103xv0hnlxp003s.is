@@ -100,7 +100,7 @@ let PLAY_TAG = "#REVERSI_RECORD"
         Ui:C:container({
           children: [
             Ui:C:mfm({
-              text: `$[x4 :GoBack:]`
+              text: `$[x4 :nanasi:]`
             })
           ]
           align: "center"

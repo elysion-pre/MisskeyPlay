@@ -38,7 +38,7 @@ let PLAY_TAG = "#もらったリアクション"
       ])
       Mk:dialog("エラー", [
         `ユーザーIDが見つかりませんでした`
-        `$[x2 :fushiginakotomoarumondesuna::mimi_hate:]`
+        `$[x2 :kaikigenshou::bakuhatsu_sakananoonigiri:]`
         `ログインしてから遊んでみてねー👋`
       ].join(Str:lf), "error")
     } else {

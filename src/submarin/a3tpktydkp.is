@@ -10,6 +10,7 @@
 
 let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/a3tpktydkp`
 let PLAY_TAG = "#おくったリアクション"
+
 @Game() {
   // リアクションリスト
   var reaction_list = null
@@ -40,7 +41,43 @@ let PLAY_TAG = "#おくったリアクション"
         `ログインしてから遊んでみてねー👋`
       ].join(Str:lf), "error")
     } else {
-      exec()
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: [
+                `集計するタイプを選択してください`
+              ].join(Str:lf)
+            })
+            Ui:C:buttons({
+              buttons: [
+                {
+                  text: "今日のリアクション"
+                  onClick: @() {
+                    fSearchAll = false
+                    exec()
+                  }
+                  primary: true
+                }
+                {
+                  text: "今までのリアクション"
+                  onClick: @() {
+                    fSearchAll = true
+                    exec()
+                  }
+//                  primary: true
+                }
+              ]
+            })
+            Ui:C:mfm({
+              text: [
+                `<small>⚠️『今までのリアクション』を選択した場合、かなり時間が必要になります。</small>`
+              ].join(Str:lf)
+            })
+          ]
+          align: "center"
+        })
+      ])
     }
   }
   
@@ -80,19 +117,28 @@ let PLAY_TAG = "#おくったリアクション"
   }
   // 実行
   @exec() {
-    let info_text = if fSearchAll `全て` else `今日`
+    let info_text = if fSearchAll `今まで` else `今日`
+    
+    let render_components = []
+
+    render_components.push(
+      Ui:C:mfm({
+        text: [
+          `$[x2 Now Loading]`
+          `{info_text}のリアクション取得中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+        ].join(Str:lf)
+      })
+    )
+    
+    if fSearchAll {
+      render_components.push(
+        Ui:C:mfm({}, "reaction_data")
+      )
+    }
 
     render([
       Ui:C:container({
-        children: [
-          Ui:C:mfm({
-            text: [
-              `$[x2 Now Loading]`
-              `{info_text}のリアクション取得中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
-            ].join(Str:lf)
-          })
-          Ui:C:mfm({}, "reaction_data")
-        ]
+        children: render_components
         align: "center"
       })
     ])
@@ -105,6 +151,12 @@ let PLAY_TAG = "#おくったリアクション"
       limit: 100,
       sinceDate: since_date
     })
+    if fSearchAll {
+      // 作業中UI更新
+      Ui:get("reaction_data").update({
+        text: `<small>{users_reactions.len}</small>`
+      })
+    }
 
     if Core:type(users_reactions) == "error" {
       render([
@@ -132,10 +184,10 @@ let PLAY_TAG = "#おくったリアクション"
     }
 
     if users_reactions.len == 0 {
+
       // 結果表示用
       let resultMfm = [
-        `{if USER_NAME == null USER_USERNAME else USER_NAME}の`
-        `今日おくったリアクションはありませんでした。`
+        `{info_text}おくったリアクションはありませんでした。`
       ].join(Str:lf)
       
       render([
@@ -149,41 +201,10 @@ let PLAY_TAG = "#おくったリアクション"
           ]
           align: "center"
         })
-        Ui:C:container({
-          children: [
-            Ui:C:folder({
-              children: [
-                Ui:C:container({
-                  children: [
-                    Ui:C:button({
-                      text: "もう一度(全てのリアクションを対象)"
-                      onClick: @() {
-                        reaction_disp_mode = 0
-                        fSearchAll = true
-                        exec()
-                      }
-                      primary: true
-                    })
-                    Ui:C:mfm({
-                      text: [
-                        "<small>⚠️リアクション数に応じて読み込みに時間が必要になります。"
-                        "エラーが出るかもしれません。自己責任で。</small>"
-                      ].join(Str:lf)
-                    })
-                  ]
-                  padding: 5
-                })
-              ]
-              title: "おまけ"
-              opened: true
-            })
-          ]
-          align: "center"
-        })
       ])
 
       Mk:dialog("エラー", [
-        `今日のおくったリアクションが見つかりませんでした`
+        `{info_text}おくったリアクションが見つかりませんでした`
         `$[x2 :kanashiiyo::mimi_hate:]`
         `たくさんリアクションしようね！`
       ].join(Str:lf), "error")
@@ -201,6 +222,12 @@ let PLAY_TAG = "#おくったリアクション"
         if works.len == 0 break
 
         users_reactions = users_reactions.concat(works)
+        if fSearchAll {
+          // 作業中UI更新
+          Ui:get("reaction_data").update({
+            text: `<small>{users_reactions.len}</small>`
+          })
+        }
         if works.len < 100 break
       }
     }
@@ -332,7 +359,6 @@ let PLAY_TAG = "#おくったリアクション"
 
     // 結果表示用
     let resultMfm = [
-      `{if USER_NAME == null USER_USERNAME else USER_NAME}の`
       `{info_text}おくったリアクションは`
       `総数: {data_all_count}`
       `種類: {data_all.len}`
@@ -345,7 +371,9 @@ let PLAY_TAG = "#おくったリアクション"
       `総数: {data_all_count}`
       `種類: {data_all.len}`
       data_all.join(", ")
-    ].join(Str:lf)
+    ]
+    if reaction_disp_mode == 1 postText.push(`<small>カスタム絵文字のみ</small>`)
+    if reaction_disp_mode == 2 postText.push(`<small>絵文字のみ</small>`)
 
 // 10
     let postText10 = [
@@ -355,6 +383,8 @@ let PLAY_TAG = "#おくったリアクション"
       data10.join(", ")
     ]
     if data_all.len > 10 postText10.push(`<small>⚠️上位10種まで表示</small>`)
+    if reaction_disp_mode == 1 postText10.push(`<small>カスタム絵文字のみ</small>`)
+    if reaction_disp_mode == 2 postText10.push(`<small>絵文字のみ</small>`)
 
 // 50
     let postText50 = [
@@ -364,6 +394,8 @@ let PLAY_TAG = "#おくったリアクション"
       data50.join(", ")
     ]
     if data_all.len > 50 postText50.push(`<small>⚠️上位50種まで表示</small>`)
+    if reaction_disp_mode == 1 postText50.push(`<small>カスタム絵文字のみ</small>`)
+    if reaction_disp_mode == 2 postText50.push(`<small>絵文字のみ</small>`)
 
 // 100
     let postText100 = [
@@ -373,6 +405,8 @@ let PLAY_TAG = "#おくったリアクション"
       data100.join(", ")
     ]
     if data_all.len > 100 postText100.push(`<small>⚠️上位100種まで表示</small>`)
+    if reaction_disp_mode == 1 postText100.push(`<small>カスタム絵文字のみ</small>`)
+    if reaction_disp_mode == 2 postText100.push(`<small>絵文字のみ</small>`)
 
     render([
       Ui:C:container({
@@ -382,20 +416,12 @@ let PLAY_TAG = "#おくったリアクション"
               resultMfm
             ].join(Str:lf)
           })
-          Ui:C:button({
-            text: "もう一度"
-            onClick: @() {
-              reaction_disp_mode = 0
-              fSearchAll = false
-              exec()
-            }
-          })
           Ui:C:postFormButton({
             text: "投稿する"
             form: {
               text: [
                 `<center>`
-                postText
+                postText.join(Str:lf)
                 PLAY_URL
                 PLAY_TAG
                 `</center>`
@@ -494,32 +520,6 @@ let PLAY_TAG = "#おくったリアクション"
               })
             ]
             title: "リアクション表示設定"
-            opened: true
-          })
-          Ui:C:folder({
-            children: [
-              Ui:C:container({
-                children: [
-                  Ui:C:button({
-                    text: "もう一度(全てのリアクションを対象)"
-                    onClick: @() {
-                      reaction_disp_mode = 0
-                      fSearchAll = true
-                      exec()
-                    }
-                    primary: true
-                  })
-                  Ui:C:mfm({
-                    text: [
-                      "<small>⚠️リアクション数に応じて読み込みに時間が必要になります。"
-                      "エラーが出るかもしれません。自己責任で。</small>"
-                    ].join(Str:lf)
-                  })
-                ]
-                padding: 5
-              })
-            ]
-            title: "おまけ"
             opened: true
           })
         ]

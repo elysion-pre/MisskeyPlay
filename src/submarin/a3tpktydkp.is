@@ -37,7 +37,7 @@ let PLAY_TAG = "#おくったリアクション"
       ])
       Mk:dialog("エラー", [
         `ユーザーIDが見つかりませんでした`
-        `$[x2 :fushiginakotomoarumondesuna::mimi_hate:]`
+        `$[x2 :kaikigenshou::bakuhatsu_sakananoonigiri:]`
         `ログインしてから遊んでみてねー👋`
       ].join(Str:lf), "error")
     } else {
@@ -175,7 +175,7 @@ let PLAY_TAG = "#おくったリアクション"
       
       Mk:dialog(users_reactions.info.code, [
         users_reactions.info.message
-        `$[x2 :kanashiiyo::mimi_hate:]`
+        `$[x2 :kaikigenshou::bakuhatsu_sakananoonigiri:]`
         `?[設定 -> プライバシー](https://msk.kitazawa.me/settings/privacy)から`
         `【リアクション一覧を公開する】をONにしてください`
       ].join(Str:lf), "error")
@@ -205,7 +205,7 @@ let PLAY_TAG = "#おくったリアクション"
 
       Mk:dialog("エラー", [
         `{info_text}おくったリアクションが見つかりませんでした`
-        `$[x2 :kanashiiyo::mimi_hate:]`
+        `$[x2 :nai::kanashii_sakananoonigiri:]`
         `たくさんリアクションしようね！`
       ].join(Str:lf), "error")
       

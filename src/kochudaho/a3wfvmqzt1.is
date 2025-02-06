@@ -37,7 +37,7 @@ let PLAY_TAG = "#おくったリアクション"
       ])
       Mk:dialog("エラー", [
         `ユーザーIDが見つかりませんでした`
-        `$[x2 :fushiginakotomoarumondesuna::mimi_hate:]`
+        `$[x2 :kochudaho_kuchi_kintama::sonnannaiyo:]`
         `ログインしてから遊んでみてねー👋`
       ].join(Str:lf), "error")
     } else {
@@ -164,8 +164,8 @@ let PLAY_TAG = "#おくったリアクション"
           children: [
             Ui:C:mfm({
               text: [
-                `$[x4 :GoBack:]`
-                `?[設定 -> プライバシー](https://msk.kitazawa.me/settings/privacy)`
+                `$[x4 :sapporo_koime_no_lemon_sour_gyomu1800:]`
+                `?[設定 -> プライバシー]({SERVER_URL}/settings/privacy)`
               ].join(Str:lf)
             })
           ]
@@ -175,8 +175,8 @@ let PLAY_TAG = "#おくったリアクション"
       
       Mk:dialog(users_reactions.info.code, [
         users_reactions.info.message
-        `$[x2 :kanashiiyo::mimi_hate:]`
-        `?[設定 -> プライバシー](https://msk.kitazawa.me/settings/privacy)から`
+        `$[x2 :kochudaho_kuchi_kintama::sonnannaiyo:]`
+        `?[設定 -> プライバシー]({SERVER_URL}/settings/privacy)から`
         `【リアクション一覧を公開する】をONにしてください`
       ].join(Str:lf), "error")
       

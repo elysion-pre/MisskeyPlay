@@ -1,16 +1,15 @@
 /// @ 0.19.0
-// もらったリアクション
+// おくったリアクション
 // Copyright (c) 2024 @elysion
 // This script is licensed under the MIT
 // https://opensource.org/licenses/mit-license.php
 
 // description: 
-// 他サーバーから送られたカスタム絵文字は除外されます
-// オプションとして『すべてのノートを対象』を選択した場合、かなり時間が必要になります。
-// 5万ノート以上は未検証。自己責任で。
+// オプションとして『すべてのリアクションを対象』を選択した場合、かなり時間が必要になります。
+// 8万リアクション以上は未検証。自己責任で。
 
-let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9z0zshdmpatd06jr`
-let PLAY_TAG = "#もらったリアクション"
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/a3weaufiv6`
+let PLAY_TAG = "#おくったリアクション"
 
 @Game() {
   // リアクションリスト
@@ -25,12 +24,12 @@ let PLAY_TAG = "#もらったリアクション"
 
   // 初期化
   @init() {
-    if (USER_ID == null) {
+    if USER_ID == null {
       render([
         Ui:C:container({
           children: [
             Ui:C:mfm({
-              text: `$[x4 :nanasi:]`
+              text: `$[x4 :GoBack:]`
             })
           ]
           align: "center"
@@ -38,7 +37,7 @@ let PLAY_TAG = "#もらったリアクション"
       ])
       Mk:dialog("エラー", [
         `ユーザーIDが見つかりませんでした`
-        `$[x2 :nanashi_warui::stream:]`
+        `$[x2 :fushiginakotomoarumondesuna::mimi_hate:]`
         `ログインしてから遊んでみてねー👋`
       ].join(Str:lf), "error")
     } else {
@@ -81,6 +80,7 @@ let PLAY_TAG = "#もらったリアクション"
       ])
     }
   }
+  
   // リアクションの合計値を計算
   // param: reaction_data<arr>
   // return: <obj>
@@ -125,15 +125,14 @@ let PLAY_TAG = "#もらったリアクション"
       Ui:C:mfm({
         text: [
           `$[x2 Now Loading]`
-          `{info_text}のノートへのリアクション取得中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
-          `<small>⚠️他サーバーから送られたのカスタム絵文字は除外</small>`
+          `{info_text}のリアクション取得中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
         ].join(Str:lf)
       })
     )
     
     if fSearchAll {
       render_components.push(
-        Ui:C:mfm({}, "notes_data")
+        Ui:C:mfm({}, "reaction_data")
       )
     }
 
@@ -146,57 +145,49 @@ let PLAY_TAG = "#もらったリアクション"
 
     let since_date = if !fSearchAll Date:parse(`{Date:year()}-{Date:month().to_str().pad_start(2, "0")}-{Date:day().to_str().pad_start(2, "0")}T00:00:00.000+09:00`) else 1
 
-// users/notes
-    var users_notes = Mk:api("users/notes", {
+// users/reactions
+    var users_reactions = Mk:api("users/reactions", {
       userId: USER_ID,
       limit: 100,
-      withReplies: true,
-      withChannelNotes: true,
       sinceDate: since_date
     })
     if fSearchAll {
       // 作業中UI更新
-      Ui:get("notes_data").update({
-        text: `<small>{users_notes.len}</small>`
+      Ui:get("reaction_data").update({
+        text: `<small>{users_reactions.len}</small>`
       })
     }
 
-    if users_notes.len == 100 {
-      loop {
-        let works = Mk:api("users/notes", {
-          userId: USER_ID,
-          limit: 100,
-          withReplies: true,
-          withChannelNotes: true,
-          sinceId: users_notes[users_notes.len - 1].id
+    if Core:type(users_reactions) == "error" {
+      render([
+        Ui:C:container({
+          children: [
+            Ui:C:mfm({
+              text: [
+                `$[x4 :GoBack:]`
+                `?[設定 -> プライバシー](https://msk.kitazawa.me/settings/privacy)`
+              ].join(Str:lf)
+            })
+          ]
+          align: "center"
         })
-        if works.len == 0 break
-
-        users_notes = users_notes.concat(works)
-        if fSearchAll {
-          // 作業中UI更新
-          Ui:get("notes_data").update({
-            text: `<small>{users_notes.len}</small>`
-          })
-        }
-        if works.len < 100 break
-      }
+      ])
+      
+      Mk:dialog(users_reactions.info.code, [
+        users_reactions.info.message
+        `$[x2 :kanashiiyo::mimi_hate:]`
+        `?[設定 -> プライバシー](https://msk.kitazawa.me/settings/privacy)から`
+        `【リアクション一覧を公開する】をONにしてください`
+      ].join(Str:lf), "error")
+      
+      return 0
     }
 
-    // リアクションがあるノートのリアクションを取得
-    let notes_reactions = eval {
-      users_notes.filter(@(i) {
-        i.reactionCount > 0
-      }).map(@(v) {
-        v.reactions
-      })
-    }
-//<:`notes_reactions: {notes_reactions}`
+    if users_reactions.len == 0 {
 
-    if notes_reactions.len == 0 {
       // 結果表示用
       let resultMfm = [
-        `{info_text}もらったリアクションはありませんでした。`
+        `{info_text}おくったリアクションはありませんでした。`
       ].join(Str:lf)
       
       render([
@@ -213,37 +204,80 @@ let PLAY_TAG = "#もらったリアクション"
       ])
 
       Mk:dialog("エラー", [
-        `{info_text}のノートへのリアクションが見つかりませんでした`
-        `$[x2 :nanashi_warui::stream:]`
-        `投稿してリアクションもらえるといいね！`
+        `{info_text}おくったリアクションが見つかりませんでした`
+        `$[x2 :kanashiiyo::mimi_hate:]`
+        `たくさんリアクションしようね！`
       ].join(Str:lf), "error")
-    } else {
+      
+      return 0
+    }
 
-      render([
-        Ui:C:container({
-          children: [
-            Ui:C:mfm({
-              text: [
-                `$[x2 Now Loading]`
-                `リアクションの合計値を計算中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
-                `<small>{notes_reactions.len}件のノートを対象に集計を行っています</small>`
-              ].join(Str:lf)
-            })
-          ]
-          align: "center"
+    if users_reactions.len == 100 {
+      loop {
+        let works = Mk:api("users/reactions", {
+          userId: USER_ID,
+          limit: 100,
+          sinceId: users_reactions[users_reactions.len - 1].id
         })
-      ])
+        if works.len == 0 break
 
-      // リアクションの数を合計する
-      reaction_list = calcTotalReactions(notes_reactions)
+        users_reactions = users_reactions.concat(works)
+        if fSearchAll {
+          // 作業中UI更新
+          Ui:get("reaction_data").update({
+            text: `<small>{users_reactions.len}</small>`
+          })
+        }
+        if works.len < 100 break
+      }
+    }
+    
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `リアクション情報走査中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+//<:`users_reactions[0]: {users_reactions[0]}`
+    
+    // リアクションがあるノートのリアクションを取得
+    let reactions = users_reactions.map(@(v) {
+      let obj = {}
+      Obj:set(obj, v.type, 1)
+      obj
+    })
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `リアクションの合計値を計算中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+              `<small>{reactions.len}件を対象に集計を行っています</small>`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+      
+    // リアクションの数を合計する
+    reaction_list = calcTotalReactions(reactions)
 //<:`reaction_list: {reaction_list}`
 
-      main()
-    }
+    main()
   }
   // メイン処理
   @main() {
-
+  
     render([
       Ui:C:container({
         children: [
@@ -325,7 +359,7 @@ let PLAY_TAG = "#もらったリアクション"
 
     // 結果表示用
     let resultMfm = [
-      `{info_text}もらったリアクションは`
+      `{info_text}おくったリアクションは`
       `総数: {data_all_count}`
       `種類: {data_all.len}`
       data_all.join(", ")
@@ -333,7 +367,7 @@ let PLAY_TAG = "#もらったリアクション"
 
     // 投稿用テキスト
     let postText = [
-      `{info_text}もらったリアクションは`
+      `{info_text}おくったリアクションは`
       `総数: {data_all_count}`
       `種類: {data_all.len}`
       data_all.join(", ")
@@ -343,7 +377,7 @@ let PLAY_TAG = "#もらったリアクション"
 
 // 10
     let postText10 = [
-      `{info_text}もらったリアクションは`
+      `{info_text}おくったリアクションは`
       `総数: {data_all_count}`
       `種類: {data10.len}`
       data10.join(", ")
@@ -354,7 +388,7 @@ let PLAY_TAG = "#もらったリアクション"
 
 // 50
     let postText50 = [
-      `{info_text}もらったリアクションは`
+      `{info_text}おくったリアクションは`
       `総数: {data_all_count}`
       `種類: {data50.len}`
       data50.join(", ")
@@ -363,10 +397,9 @@ let PLAY_TAG = "#もらったリアクション"
     if reaction_disp_mode == 1 postText50.push(`<small>カスタム絵文字のみ</small>`)
     if reaction_disp_mode == 2 postText50.push(`<small>絵文字のみ</small>`)
 
-
 // 100
     let postText100 = [
-      `{info_text}もらったリアクションは`
+      `{info_text}おくったリアクションは`
       `総数: {data_all_count}`
       `種類: {data_all.len}`
       data100.join(", ")

@@ -15,11 +15,11 @@
 
 ## Play URL
 
-[https://msk.kitazawa.me/play/9x8uvz3gb6](https://msk.kitazawa.me/play/9x8uvz3gb6)
+[https://mi.kochudaho.me/play/a3wft028sy](https://mi.kochudaho.me/play/a3wft028sy)
 
 ## ソース
 
-[9x8uvz3gb6.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/kitazawa/9x8uvz3gb6.is)
+[a3wft028sy.is](https://github.com/elysion-pre/MisskeyPlay/blob/main/src/kochudaho/a3wft028sy.is)
 
 ----
 

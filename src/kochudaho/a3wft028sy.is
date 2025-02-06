@@ -9,7 +9,7 @@
 // オプションとして『すべてのノートを対象』を選択した場合、かなり時間が必要になります。
 // 5万ノート以上は未検証。自己責任で。
 
-let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/9z0zshdmpatd06jr`
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/a3wft028sy`
 let PLAY_TAG = "#もらったリアクション"
 
 @Game() {
@@ -30,7 +30,7 @@ let PLAY_TAG = "#もらったリアクション"
         Ui:C:container({
           children: [
             Ui:C:mfm({
-              text: `$[x4 :nanasi:]`
+              text: `$[x4 :sapporo_koime_no_lemon_sour_gyomu1800:]`
             })
           ]
           align: "center"
@@ -38,7 +38,7 @@ let PLAY_TAG = "#もらったリアクション"
       ])
       Mk:dialog("エラー", [
         `ユーザーIDが見つかりませんでした`
-        `$[x2 :nanashi_warui::stream:]`
+        `$[x2 :kochudaho_kuchi_kintama::sonnannaiyo:]`
         `ログインしてから遊んでみてねー👋`
       ].join(Str:lf), "error")
     } else {
@@ -214,7 +214,7 @@ let PLAY_TAG = "#もらったリアクション"
 
       Mk:dialog("エラー", [
         `{info_text}のノートへのリアクションが見つかりませんでした`
-        `$[x2 :nanashi_warui::stream:]`
+        `$[x2 :kochudaho_kuchi_kintama::sonnannaiyo:]`
         `投稿してリアクションもらえるといいね！`
       ].join(Str:lf), "error")
     } else {

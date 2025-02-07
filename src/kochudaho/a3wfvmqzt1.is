@@ -205,7 +205,7 @@ let PLAY_TAG = "#おくったリアクション"
 
       Mk:dialog("エラー", [
         `{info_text}おくったリアクションが見つかりませんでした`
-        `$[x2 :kanashiiyo::mimi_hate:]`
+        `$[x2 :kochudaho_kuchi_kintama::sonnannaiyo:]`
         `たくさんリアクションしようね！`
       ].join(Str:lf), "error")
       

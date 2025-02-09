@@ -151,12 +151,6 @@ let PLAY_TAG = "#おくったリアクション"
       limit: 100,
       sinceDate: since_date
     })
-    if fSearchAll {
-      // 作業中UI更新
-      Ui:get("reaction_data").update({
-        text: `<small>{users_reactions.len}</small>`
-      })
-    }
 
     if Core:type(users_reactions) == "error" {
       render([
@@ -181,6 +175,13 @@ let PLAY_TAG = "#おくったリアクション"
       ].join(Str:lf), "error")
       
       return 0
+    }
+
+    if fSearchAll {
+      // 作業中UI更新
+      Ui:get("reaction_data").update({
+        text: `<small>{users_reactions.len}</small>`
+      })
     }
 
     if users_reactions.len == 0 {

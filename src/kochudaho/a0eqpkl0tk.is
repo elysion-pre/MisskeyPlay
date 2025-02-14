@@ -191,6 +191,9 @@ let TWEMOJI_LIST = eval {
         gift = TWEMOJI_LIST.twemoji_object[random(0, (TWEMOJI_LIST.twemoji_object.len - 1))]
       }
     }
+    if Date:month() == 2 && Date:day() == 14 {
+      gift = "🍫"
+    }
 
     let omanMfm = [
       `$[position.y=1.3 $[scale.x=0.5,y=0.5 ●]]`
@@ -210,6 +213,9 @@ let TWEMOJI_LIST = eval {
       let user = Mk:api("users/show", {
         userId: USER_ID
       })
+      if Date:month() == 2 && Date:day() == 14 {
+        mfm = "𝑯𝒂𝒑𝒑𝒚 𝑽𝒂𝒍𝒆𝒏𝒕𝒊𝒏𝒆"
+      }
       if Core:type(user) != "error" {
         if user.birthday != null {
           if (Date:month() == Date:month(Date:parse(user.birthday)) && Date:day() == Date:day(Date:parse(user.birthday))) {
@@ -220,7 +226,7 @@ let TWEMOJI_LIST = eval {
       }
       mfm
     }
-    
+
     let giftMfm = eval {
       var mfm = ""
       if fHBD {

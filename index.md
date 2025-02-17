@@ -45,6 +45,7 @@ Copyright (c) 2024 elysion
 - [今日のおきんたま戦隊](./page/kitazawa/9rbw92rnzh.md)
 - [今日のスパチャ](./page/kitazawa/9rtawsjc34.md)
 - [今日ののびみみちゃん](./page/kitazawa/9sk84yujhh.md)
+- [今日の杠さんできるかな](./page/kitazawa/a4chjml60k.md)
 
 1時間毎に変化
 - [きたざわんち](./page/kitazawa/9vutr0h6cy.md)
@@ -79,6 +80,8 @@ Copyright (c) 2024 elysion
 - [前後のノート](./page/kitazawa/a1qctc3acl.md)
 - [きたざわノーツランキング](./page/kitazawa/a2e7hul6sw.md)
 - [おくったリアクション](./page/kitazawa/a3weaufiv6.md)
+- [杠さんできるかな](./page/kitazawa/a4chm0st7g.md)
+
 
 ### misskey.stream
 デイリー

@@ -1,0 +1,177 @@
+/// @ 0.19.0
+// 杠さんできるかな
+// Copyright (c) 2025 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let PLAY_TAG = "#YUZURIHA_SAN"
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/a4chm0st7g`
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
+
+let random = eval {
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+let YUZURIHA_DATA = [
+  ":yuzuriha:"
+  ":yuzuriha_kubi:"
+  ":yuzuriha_parts1:"
+  ":yuzuriha_parts2:"
+  ":yuzuriha_parts3:"
+  ":yuzuriha_parts4:"
+  ":yuzuriha_parts5:"
+  ":yuzuriha_parts6:"
+  ":yuzuriha_parts7:"
+]
+
+@Game() {
+  var yuzurihas = null
+  var counts = {}
+
+  // 初期化
+  @init() {
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `杠読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    // ランダムな整数(0-8)で配列を生成
+    yuzurihas = Core:range(1, 9).map(@() {
+      random(0, 8)
+    })
+
+    counts = countDuplicates(yuzurihas)
+
+    main()
+  }
+  // 配列の各要素の重複数
+  // param: elements<arr>
+  // return: <arr>
+  @countDuplicates(elements) {
+    let counts = {}
+    // 出現回数をカウント
+    each (let element, elements) {
+      let key = element.to_str()
+      if (Obj:has(counts, key)) {
+        // 既にカウントされている場合はインクリメント
+        counts[key] += 1
+      } else {
+        // 初めて出現する要素の場合は初期化
+        counts[key] = 1
+      }
+    }
+    // 0から8の各数値の重複数を示す配列を生成
+    let duplicateCounts = Core:range(0, 8).map(@(v) {
+      let key = v.to_str()
+      if (Obj:has(counts, key)) counts[key] else 0
+    })
+    duplicateCounts
+  }
+  // 並びの正確性を計算
+  // param: elements<arr>
+  // return: <num>
+  @sortedPercentage(elements) {
+    let correctCount = elements.reduce(@(acc, v, i) {
+      acc + (if v == i 1 else 0)
+    }, 0)
+    (correctCount * 100) / YUZURIHA_DATA.len
+  }
+  // メイン処理
+  @main() {
+    // 並びの正確性を計算
+    let percentage = Math:floor(sortedPercentage(yuzurihas))
+
+    // 結果表示用
+    let resultMfm = [
+      `$[tada.speed=0s $[border.width=5,style=ridge,color=008800 {YUZURIHA_DATA[yuzurihas[0]]}:white::white:`
+      `{YUZURIHA_DATA[yuzurihas[1]]}:white::white:`
+      `{YUZURIHA_DATA[yuzurihas[2]]}{YUZURIHA_DATA[yuzurihas[3]]}{YUZURIHA_DATA[yuzurihas[4]]}`
+      `{YUZURIHA_DATA[yuzurihas[5]]}{YUZURIHA_DATA[yuzurihas[6]]}:white:`
+      `{YUZURIHA_DATA[yuzurihas[7]]}{YUZURIHA_DATA[yuzurihas[8]]}:white:]]`
+      `杠率: ***$[fg.color=f00 {percentage}]%***`
+    ].join(Str:lf)
+
+    // カウント用
+    let countMfm = []
+    for (let i = 0, counts.len) {
+      countMfm.push(`{YUZURIHA_DATA[i]}: {counts[i]} `)
+    }
+
+    // 杠情報
+    let yuzurihaInfoMfm = [
+      `<small>{countMfm.join()}</small>`
+    ].join(Str:lf)
+
+    // 投稿用テキスト
+    let postText = [
+      `<center>`
+      resultMfm
+      PLAY_TAG
+      PLAY_URL
+      `</center>`
+    ].join(Str:lf)
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: resultMfm
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:button({
+            text: "もう一度"
+            onClick: init
+          })
+          Ui:C:postFormButton({
+            text: "投稿する"
+            form: {
+              text: postText
+            }
+            primary: true
+            rounded: true
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:folder({
+            children: [
+              Ui:C:mfm({
+                text: yuzurihaInfoMfm
+              })
+            ]
+            title: "杠情報"
+            opened: true
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  // 描画
+  // param: component<arr>
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

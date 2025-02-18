@@ -149,7 +149,7 @@ let RANK_EMOJI = [
 
       // 投稿用テキスト
       let postText = [
-        `<plain>{if USER_NAME == null USER_USERNAME else USER_NAME}</plain>の{PLAY_NAME}は`
+        `<plain>{if USER_NAME != null USER_NAME else USER_USERNAME}</plain>の{PLAY_NAME}は`
         ranking_list.join(Str:lf)
         PLAY_TAG
         PLAY_URL

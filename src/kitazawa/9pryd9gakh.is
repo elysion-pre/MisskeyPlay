@@ -1,18 +1,21 @@
-/// @ 0.18.0
+/// @ 0.19.0
 // カスタム絵文字サークル
-// Copyright (c) 2024 @elysion
+// Copyright (c) 2024-2025 @elysion
 // This script is licensed under the MIT
 // https://opensource.org/licenses/mit-license.php
 
+let version = "1.1.0"
+
 let PLAY_NAME = "カスタム絵文字サークル"
-let PLAY_URL = if exists THIS_URL THIS_URL else "https://msk.kitazawa.me/play/9pryd9gakh"
+let PLAY_URL = `{SERVER_URL}/play/9pryd9gakh`
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
 
 let random = eval {
-  var id = if exists USER_ID USER_ID else Util:uuid()
-  // シードが「ユーザーID+今日の日付」である乱数生成器を用意
-//  Math:gen_rng(`{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
-  // シードが「ユーザーID+ミリ秒」である乱数生成器を用意
-  Math:gen_rng(`{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
 }
 
 // 除外する絵文字のカテゴリ
@@ -25,11 +28,7 @@ let IGNORE_EMOJI_LIST = eval {
     username: "elysion"
   })
   if (Core:type(pages_data) == "error") {
-    data = {
-      category: [
-        null
-      ]
-    }
+    data = { category: [ null ] }
   } else {
     data = Json:parse(pages_data.content[0].text)
   }
@@ -124,180 +123,166 @@ let IGNORE_EMOJI_LIST = eval {
 }
 
 @Game() {
-  let emojiMng = EmojiManager()
-  var select_category = ""
-  var select_category_emoji = ""
-  var emojiArray = []
-
-  // カテゴリ選択肢変更イベント
-  // param: category<str>
-  @changeCategory(category) {
-    // 押せなくしておく
-    Ui:get("emojiCategoryButton").update({ disabled: true })
-    Ui:get("emojiNameButton").update({ disabled: true })
-
-    select_category = category
-
-    // 絵文字選択肢作成
-    let emoji_items = []
-    let category_emojis = emojiMng.getCategoryEmojis(select_category)
-    each (let emoji, category_emojis) {
-      let aliase = emojiMng.getEmojiAliase(emoji, false)
-      emoji_items.push({
-        text: `{aliase}(:{emoji.name}:)`
-        value: emoji.name
-      })
-    }
-
-    select_category_emoji = emoji_items[0].value
-
-    // 選択肢UI更新
-    Ui:get("emojiNameSelect").update({
-      items: emoji_items
-      onChange: @(value) {
-        changeEmoji(value)
-      }
-      default: select_category_emoji
-      label: `絵文字({category_emojis.len})`
-    })
-
-    Ui:get("emojiCategoryButton").update({ disabled: false })
-    Ui:get("emojiNameButton").update({ disabled: false })
+  var emojiMng = null
+  var select = {
+    category: ""
+    category_emojis: ""
+    emojis: []
   }
-  // 絵文字選択肢変更イベント
-  // param: emoji_name<str>
-  @changeEmoji(emoji_name) {
-    // 押せなくしておく
-    Ui:get("emojiCategoryButton").update({ disabled: true })
-    Ui:get("emojiNameButton").update({ disabled: true })
+  var category_emojis_components = []
 
-    select_category_emoji = emoji_name
-
-    Ui:get("emojiMfm").update({
-      text: `$[x2 :{select_category_emoji}:]`
-    })
-
-    Ui:get("emojiCategoryButton").update({ disabled: false })
-    Ui:get("emojiNameButton").update({ disabled: false })
-  }
-  // 初期設定
+  // 初期化
   @init() {
 
-    // もう一度ボタンUI更新
-    Ui:get("replayButton").update({
-      text: "全絵文字からランダム"
-      onClick: @() {
-        randomSelect()
-      }
-      disabled: true
-    })
-
-    // カテゴリ
-    select_category = emojiMng.getCategories()[0]
-    // カテゴリ選択肢作成
-    let category_items = []
-    each (let category, emojiMng.getCategories()) {
-      category_items.push({
-        text: category
-        value: category
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `カスタム絵文字読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
       })
+    ])
+
+    emojiMng = EmojiManager()
+    
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `絵文字ボタン作成中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    // 絵文字ボタン作成
+    category_emojis_components = []
+    each (let category, emojiMng.getCategories()) {
+      let category_emojis = emojiMng.getCategoryEmojis(category).map(@(v) {
+        `$[clickable.ev={v.name} :{v.name}:]`
+      })
+      category_emojis_components.push(
+        Ui:C:container({
+          children: [
+            Ui:C:folder({
+              children: [
+                Ui:C:container({
+                  children: [
+                    Ui:C:mfm({
+                      text: [
+                        `<small>絵文字クリックで選択</small>`
+                        category_emojis.join()
+                      ].join(Str:lf)
+                      onClickEv: @(e) {
+                        selectEmoji(e)
+                        main()
+                      }
+                    })
+                    Ui:C:button({
+                      text: `【{category}】内からランダム`
+                      onClick: @() {
+                        selectRandomCategory(category)
+                        main()
+                      }
+                      primary: true
+                      rounded: true
+                    })
+                  ]
+                  align: "center"
+                })
+              ]
+              title: `{category}({category_emojis.len})`
+              opened: false
+            })
+          ]
+          align: "center"
+          borderStyle: "solid"
+          rounded: true
+        })
+      )
     }
-    // カテゴリ選択肢UI更新
-    Ui:get("emojiCategorySelect").update({
-      items: category_items
-      onChange: @(value) {
-        changeCategory(value)
-      }
-      default: select_category
-      label: `カテゴリ({emojiMng.getCategories().len})`
-    })
 
-    changeCategory(select_category)
-    changeEmoji(select_category_emoji)
-
-    Ui:get("emojiCategoryButton").update({
-      text: "カテゴリ内からランダム"
-      onClick: @() {
-        randomCategorySelect()
-      }
-      primary: true
-      rounded: true
-      disabled: true
-    })
-
-    Ui:get("emojiNameButton").update({
-      text: "決定"
-      onClick: @() {
-        submit()
-      }
-      primary: true
-      rounded: true
-      disabled: true
-    })
-
-    Ui:get("emojiFolder").update({
-      title: "絵柄情報"
-    })
-
-    randomSelect()
-<:`init end`
-  }
-  // 全絵文字からランダム
-  @randomSelect() {
-<:`randomSelect start`
-    // UI表示・非表示
-    Ui:get("loading_area").update( { hidden: false })
-    Ui:get("main_area").update( { hidden: true })
-    Ui:get("post_area").update( { hidden: true })
-    Ui:get("debug_area").update( { hidden: true })
-
-    Ui:get("replayButton").update( { disabled: true })
-    Ui:get("emojiCategoryButton").update( { disabled: true })
-    Ui:get("emojiNameButton").update( { disabled: true })
-
-    emojiArray = []
-    for 12 {
-      emojiArray.push(`:{emojiMng.getRandomEmoji().name}:`)
-    }
+    selectRandomAll()
     main()
   }
-  // カテゴリ内からランダム
-  @randomCategorySelect() {
-    // UI表示・非表示
-    Ui:get("loading_area").update( { hidden: false })
-    Ui:get("main_area").update( { hidden: true })
-    Ui:get("post_area").update( { hidden: true })
-    Ui:get("debug_area").update( { hidden: true })
+  // 絵柄選定: すべてランダム
+  @selectRandomAll() {
+    
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `カスタム絵文字を読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
 
-    Ui:get("replayButton").update( { disabled: true })
-    Ui:get("emojiCategoryButton").update( { disabled: true })
-    Ui:get("emojiNameButton").update( { disabled: true })
-
-    emojiArray = []
+    select.emojis = []
     for 12 {
-      let category_emojis = emojiMng.getCategoryEmojis(select_category)
-      let emoji = category_emojis[random(0, (category_emojis.len - 1))]
-      emojiArray.push(`:{emoji.name}:`)
+      select.emojis.push(`:{emojiMng.getRandomEmoji().name}:`)
     }
-    main()
   }
-  // 決定ボタン押下イベント
-  @submit() {
-    // UI表示・非表示
-    Ui:get("loading_area").update( { hidden: false })
-    Ui:get("main_area").update( { hidden: true })
-    Ui:get("post_area").update( { hidden: true })
-    Ui:get("debug_area").update( { hidden: true })
+  // 絵柄選定: カテゴリからランダム
+  @selectRandomCategory(category) {
 
-    Ui:get("replayButton").update( { disabled: true })
-    Ui:get("emojiCategoryButton").update( { disabled: true })
-    Ui:get("emojiNameButton").update( { disabled: true })
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `【{category}】のカスタム絵文字を読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
 
-    emojiArray = []
+    select.category = category
+    // カテゴリ(ランダム)の絵文字を取得
+    select.category_emojis = emojiMng.getCategoryEmojis(category)
+
+    select.emojis = []
     for 12 {
-      emojiArray.push(`:{select_category_emoji}:`)
+      let emoji = select.category_emojis[random(0, (select.category_emojis.len - 1))]
+      select.emojis.push(`:{emoji.name}:`)
     }
-    main()
+  }
+  // 絵柄選定: 指定したカスタム絵文字
+  @selectEmoji(emoji) {
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `再作成中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    select.emojis = []
+    for 12 {
+      select.emojis.push(`:{emoji}:`)
+    }
   }
   // メイン処理
   @main() {
@@ -313,7 +298,7 @@ let IGNORE_EMOJI_LIST = eval {
     let circleMfm = []
     for (let i = 0, CIRCLE_POS.len) {
       for (let j = 0, CIRCLE_POS[i].len) {
-        circleMfm.push(`$[position.x={CIRCLE_POS[i][j].x},y={CIRCLE_POS[i][j].y} $[spin.speed=5s,left {emojiArray[i+j]}]]`)
+        circleMfm.push(`$[position.x={CIRCLE_POS[i][j].x},y={CIRCLE_POS[i][j].y} $[spin.speed=5s,left {select.emojis[i+j]}]]`)
       }
       circleMfm.push(Str:lf)
     }
@@ -323,90 +308,64 @@ let IGNORE_EMOJI_LIST = eval {
       `$[spin.speed=5s {circleMfm.join()}]`
     ].join(Str:lf)
 
-    // 結果表示UI更新
-    Ui:get("resultMfm").update({
-      text: resultMfm
-    })
-
     // 投稿用テキスト
     let postText = [
       `<center>`
-      PLAY_NAME
       resultMfm
       PLAY_URL
       `</center>`
     ].join(Str:lf)
 
-    // 投稿UI更新
-    Ui:get("postFormButton").update({
-      text: "投稿する"
-      form: {
-        text: postText
-      }
-      primary: true
-      rounded: true
-    })
-
-    // UI表示・非表示
-    Ui:get("loading_area").update( { hidden: true })
-    Ui:get("main_area").update( { hidden: false })
-    Ui:get("post_area").update( { hidden: false })
-    Ui:get("debug_area").update( { hidden: false })
-
-    Ui:get("replayButton").update( { disabled: false })
-    Ui:get("emojiCategoryButton").update( { disabled: false })
-    Ui:get("emojiNameButton").update( { disabled: false })
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: resultMfm
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:button({
+            text: "もう一度"
+            onClick: @() {
+              selectRandomAll()
+              main()
+            }
+          })
+          Ui:C:postFormButton({
+            text: "投稿する"
+            form: {
+              text: postText
+            }
+            primary: true
+            rounded: true
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:folder({
+            children: [
+              Ui:C:container({
+                children: category_emojis_components
+              })
+            ]
+            title: "自分でカスタム絵文字の中から選ぶ"
+            opened: true
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  // 描画
+  // param: component<arr>
+  @render(components) {
+    Ui:render(components)
   }
   init()
 }
-
-// UIを表示
-Ui:render([
-  Ui:C:container({
-    children: [
-      Ui:C:mfm({
-        text: `$[x2 {PLAY_NAME}]`
-      }, "titleMfm")
-    ]
-    align: "center"
-  } "title_area")
-  Ui:C:container({
-    children: [
-      Ui:C:mfm({
-        text: `$[x2 $[bounce Now Loading...]]`
-      })
-    ]
-    align: "center"
-  } "loading_area")
-  Ui:C:container({
-    children: [
-      Ui:C:mfm({}, "resultMfm")
-    ]
-    align: "center"
-    hidden: true
-  }, "main_area")
-  Ui:C:container({
-    children: [
-      Ui:C:button({}, "replayButton")
-      Ui:C:postFormButton({}, "postFormButton")
-    ]
-    align: "center"
-    hidden: true
-  }, "post_area")
-  Ui:C:container({
-    children: [
-      Ui:C:folder({
-        children: [
-          Ui:C:select({}, "emojiCategorySelect")
-          Ui:C:button({} "emojiCategoryButton")
-          Ui:C:select({}, "emojiNameSelect")
-          Ui:C:mfm({}, "emojiMfm")
-          Ui:C:button({} "emojiNameButton")
-        ]
-      }, "emojiFolder")
-    ]
-    align: "center"
-    hidden: true
-  }, "debug_area")
-])
 Game()

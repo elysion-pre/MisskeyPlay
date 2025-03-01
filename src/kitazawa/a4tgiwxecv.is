@@ -1,0 +1,371 @@
+/// @ 0.19.0
+// きたざわペアーズ
+// Copyright (c) 2025 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let version = "1.0.0"
+
+let PLAY_TAG =  "#KITAZAWA_PAIRS"
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/a4tgiwxecv`
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
+
+let random = eval {
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+// カードの種類
+let CARD_TYPES = 12
+// カードの枚数
+let CARD_COUNT = CARD_TYPES * 2
+
+// カード裏面の絵柄
+let BACK_OF_CARD_MARK = ":icon_kitazawamisuki:"
+
+// きたざわペアーズで使用する絵文字カテゴリ
+// pagesのjsonデータ読み込み
+// https://{SERVER_URL}/@elysion/pages/kitazawa_pairs_data
+let EMOJI_LIST = eval {
+  var data = null
+  let pages_data = Mk:api("pages/show", {
+    name: "kitazawa_pairs_data"
+    username: "elysion"
+  })
+  if (Core:type(pages_data) == "error") {
+    Core:abort([
+      `pagesにデータが見つかりませんでした。`
+      `{SERVER_URL}/@elysion/pages/kitazawa_pairs_data`
+      `プログラムを停止します。`
+    ].join(Str:lf))
+  } else {
+    data = Json:parse(pages_data.content[0].text)
+  }
+  data
+}
+
+// 配列のシャッフル
+// 参考: https://qiita.com/pure-adachi/items/77fdf665ff6e5ea22128
+// param: array<arr>
+// return: <arr>
+@shuffle(array) {
+  var i = array.len
+  for i {
+    let k = Math:floor(random() * i)
+    [array[k], array[i - 1]] = [array[i - 1], array[k]]
+    i -= 1
+  }
+  array
+}
+
+// カード
+// param: mark<num>
+@Card(mark) {
+  let this = {
+    mark: -1
+    flipped: false
+    matched: false
+    // コンストラクタ
+    constructor: @(mark) {
+      this.mark = mark
+      this.flipped = false
+      this.matched = false
+      this
+    }
+    setMark: @(mark) { this.mark = mark }
+    setFlipped: @(f) { this.flipped = f }
+    setMatched: @(f) { this.matched = f }
+
+    getMark: @() { return this.mark }
+    getFlipped: @() { return this.flipped }
+    getMatched: @() { return this.matched }
+  }
+  this.constructor(mark)
+}
+
+// デッキ
+@Deck() {
+  let this = {
+    cards: []
+    // コンストラクタ
+    constructor: @() {
+      this.cards = Arr:create(CARD_COUNT)
+      this
+    }
+    getCard: @(no) { return this.cards[no] }
+
+    // 山札作成
+    create: @() {
+      var n = 0
+      for (let i = 0, CARD_TYPES) {
+        this.cards[n] = Card(i)
+        this.cards[n+1] = Card(i)
+        n += 2
+      }
+      shuffle(this.cards)
+    }
+  }
+  this.constructor()
+}
+
+@Game() {
+  var marks = null
+  var deck = null
+  var prev_card = null
+  var fClick = false
+  var flipp_count = 0
+
+  // 初期化
+  @init() {
+    marks = []
+    createMark()
+
+    deck = Deck()
+    deck.create()
+
+    prev_card = null
+    fClick = true
+    flipp_count = 0
+
+    main()
+  }
+  // 絵柄選定
+  @createMark() {
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `カスタム絵文字読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+    
+    // 12種類なかった場合の補欠要因
+    let tmp_emojis = [
+      ":kenkoba:"
+      ":kenkoba_:"
+      ":kenkoba__:"
+      ":broccobayashi:"
+      ":child_izumoto:"
+      ":ha:"
+      ":erufu_n:"
+      ":mimicchi:"
+      ":marucchi:"
+      ":endoukenichi:"
+      ":tamori_:"
+      ":tamori:"
+    ]
+    
+    // ランダムにカテゴリを選定
+    let category = EMOJI_LIST.pairs_categories[random(0, (EMOJI_LIST.pairs_categories.len - 1))]
+
+    // カテゴリの絵文字を抽出してシャッフル
+    marks = shuffle(CUSTOM_EMOJIS.filter(@(emoji) {
+      emoji.category == category
+    }).map(@(v) {
+      `:{v.name}:`
+    }))
+    
+    // marksの絵文字数が12個以下の場合は12個になるまで追加
+    if marks.len < CARD_TYPES {
+      loop {
+        if marks.len >= CARD_TYPES break
+        if random(0, 1) == 0 marks.push(tmp_emojis.shift()) else marks.push(tmp_emojis.pop())
+      }
+    }
+
+    // marksの絵文字数が12個以上ある場合は12個になるまで削減
+    if marks.len > CARD_TYPES {
+      loop {
+        if marks.len <= CARD_TYPES break
+        let no = random(0, (marks.len - 1))
+        marks.remove(no)
+      }
+    }
+  }
+  // UI更新
+  @updateUI() {
+    Ui:get("cardsMfm").update({
+      text: [
+        `$[tada.speed=0s {createDeckMfm()}]`
+        `手数: {flipp_count}回`
+      ].join(Str:lf)
+      onClickEv: @(e) {
+        if Core:type(e.to_num()) == "num" {
+          clickCard(e.to_num())
+        } else {
+          // error
+        }
+      }
+    })
+  }
+  // カードクリック処理
+  // param: no<num>
+  @clickCard(no) {
+    let card = deck.getCard(no)
+    if !fClick || (prev_card != null && prev_card == card) return 0
+    
+    fClick = false
+
+    let flipped = card.getFlipped()
+    let matched = card.getMatched()
+    // めくられていないかつマッチしていない
+    if !(flipped || matched) {
+      // めくる
+      card.setFlipped(true)
+      // update UI
+      updateUI()
+    }
+
+    // 1枚目
+    if prev_card == null {
+      prev_card = card
+      fClick = true
+    } else {
+      // 2枚目なら1枚目とマッチしているかどうか
+      if prev_card.getMark() == card.getMark() {
+        // マッチ
+        prev_card.setMatched(true)
+        card.setMatched(true)
+      } else {
+        // 裏面に戻す
+        prev_card.setFlipped(false)
+        card.setFlipped(false)
+        // 1秒待つ
+        Core:sleep(1000)
+      }
+
+      prev_card = null
+      flipp_count += 1
+
+      // update UI
+      updateUI()
+
+      // すべてのカードがマッチしていたら結果処理へ
+      if deck.cards.every(@(v) { v.matched }) {
+        result()
+      } else {
+        fClick = true
+      }
+    }
+  }
+  // MFM作成
+  // return: <str>
+  @createDeckMfm() {
+    let cardsMfm = []
+    let row = CARD_COUNT / 4
+    let column = CARD_COUNT / 6
+    // 6 x 4
+    for (let i = 0, column) {
+      let mfm = []
+      for (let j = 0, row) {
+        let no = (i * row) + j
+        let card = deck.getCard(no)
+        let mark = marks[card.getMark()]
+        if card.getFlipped() {
+          // 表面
+          mfm.push(`$[border.radius=5 $[bg.color=fff5 {mark}]]`)
+        } else {
+          // 裏面
+          mfm.push(`$[clickable.ev={no.to_str()} $[border.radius=5 $[bg.color=030 {BACK_OF_CARD_MARK}]]]`)
+        } 
+      }
+      cardsMfm.push(mfm.join())
+    }
+    cardsMfm.join(Str:lf)
+  }
+  // メイン処理
+  @main() {
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: `$[x2 $[fg.color=ff0000 K]$[fg.color=ff7700 I]$[fg.color=ffea00 T]$[fg.color=9dff00 A]$[fg.color=26ff00 Z]$[fg.color=00ff4d A]$[fg.color=00ffc4 W]$[fg.color=00c4ff A]$[fg.color=004dff  ]$[fg.color=2600ff P]$[fg.color=9d00ff A]$[fg.color=ff00ea I]$[fg.color=ff0077 R]$[fg.color=ff0000 S]]`
+          })
+        ]
+        align: "center"
+//        bgColor: "#030"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({}, "cardsMfm")
+        ]
+        align: "center"
+//        bgColor: "#030"
+//        rounded: true
+      })
+    ])
+    // update UI
+    updateUI()
+  }
+  // 結果
+  @result() {
+
+    // 結果表示用テキスト
+    let resultMfm = [
+      `$[sparkle $[tada.speed=0s {createDeckMfm()}]]`
+      `手数: {flipp_count}回`
+    ].join(Str:lf)
+    
+    // 投稿用テキスト
+    let postText = [
+      `<center>`
+      resultMfm
+      PLAY_TAG
+      PLAY_URL
+      `</center>`
+    ].join(Str:lf)
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: "$[x2 $[rainbow $[fg.color=ff0000 𝐶]$[fg.color=ff6f00 𝑜]$[fg.color=ffd900 𝑛]$[fg.color=b7ff00 𝑔]$[fg.color=48ff00 𝑟]$[fg.color=00ff26 𝑎]$[fg.color=00ff91 𝑡]$[fg.color=00ffff 𝑢]$[fg.color=0091ff 𝑙]$[fg.color=0026ff 𝑎]$[fg.color=4800ff 𝑡]$[fg.color=b700ff 𝑖]$[fg.color=ff00d9 𝑜]$[fg.color=ff006f 𝑛]$[fg.color=ff0000 𝑠]]]"
+          })
+        ]
+        align: "center"
+//        bgColor: "#030"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: resultMfm
+          })
+        ]
+        align: "center"
+//        bgColor: "#030"
+//        rounded: true
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:postFormButton({
+            text: "投稿する"
+            form: {
+              text: postText
+            }
+            primary: true
+            rounded: true
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  // 描画
+  // param: components<arr>
+  @render(components) {
+    Ui:render(components)
+  }
+
+  init()
+}
+Game()

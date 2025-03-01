@@ -81,6 +81,8 @@ Copyright (c) 2024 elysion
 - [きたざわノーツランキング](./page/kitazawa/a2e7hul6sw.md)
 - [おくったリアクション](./page/kitazawa/a3weaufiv6.md)
 - [杠さんできるかな](./page/kitazawa/a4chm0st7g.md)
+- [きたざわペアーズ](./page/kitazawa/a4tgiwxecv.md)
+- [マイクロビみみちゃん](./page/kitazawa/a4tkl5g9sy.md)
 
 
 ### misskey.stream

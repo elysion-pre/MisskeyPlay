@@ -1,0 +1,86 @@
+/// @ 0.19.0
+// マイクロビミミちゃん
+// Copyright (c) 2025 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let version = "1.0.0"
+
+let PLAY_TAG = "#マイクロビミミちゃん"
+let PLAY_URL = `{SERVER_URL}/play/a4tkl5g9sy`
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
+
+let random = eval {
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+@Game() {
+  // 初期化
+  @init() {
+    main()
+  }
+  // メイン処理
+  @main() {
+    // 色
+    let fg_col = eval {
+      var hex = Num:to_hex(random(0, 16777216))
+      let c = (6 - hex.len - 1)
+      if (c != 0) for c hex = `0{hex}`
+      hex
+    }
+
+    // 投稿用テキスト
+    let resultMfm = [
+      `$[position.y=1.5 $[tada.speed=0s $[tada.speed=0s $[tada.speed=0s $[position.x=1,y=0.2 :nobimimi_3:]$[position.x=-1,y=-0.2 :nibimimi_1:]]]]`
+      `$[position.y=-3.2 $[fg.color={fg_col} $[position.x=1.15,y=-0.4 │]$[position.x=0.2 ▲]$[position.y=0.35 ─]$[position.x=-0.2 ▲]$[position.x=-1.15,y=-0.4 │]]]`
+      `$[position.y=-2.65 $[fg.color={fg_col} $[position.x=0.1,y=-0.5 $[rotate.deg=25 ─]]▼$[position.x=-0.1,y=-0.5 $[rotate.deg=-25 ─]]]]]`
+      `$[fg.color={fg_col} ■]: {fg_col}`
+    ].join(Str:lf)
+  
+    // 投稿用テキスト
+    let postText = [
+      `<center>`
+      resultMfm
+      PLAY_TAG
+      PLAY_URL
+      `</center>`
+    ].join(Str:lf)
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: resultMfm
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:button({
+            text: "もう一度"
+            onClick: main
+          })
+          Ui:C:postFormButton({
+            text: "投稿する"
+            form: {
+              text: postText
+            }
+            primary: true
+            rounded: true
+          })
+        ]
+        align: "center"
+      })
+    ])
+  }
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

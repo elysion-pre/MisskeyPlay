@@ -1,0 +1,294 @@
+/// @ 0.19.0
+// きたざわ文字マスター
+// Copyright (c) 2025 @elysion
+// This script is licensed under the MIT
+// https://opensource.org/licenses/mit-license.php
+
+let version = "1.0.0"
+
+// 透明の絵文字(blank)などに適宜置き換えてください
+let TRANSPARENT_EMOJI = ":tp:"
+
+// 使用するカスタム絵文字のカテゴリ
+// 正方形のみのカスタム絵文字があるカテゴリ推奨
+let CUSTOM_EMOJI_CATEGORY = "moji"
+
+let PLAY_URL = if exists THIS_URL THIS_URL else `{SERVER_URL}/play/a4z2oz14i3`
+let PLAY_TAG = "#KITAZAWA_MOJI_MASTER"
+let PLAY_ID = if exists THIS_ID THIS_ID else PLAY_URL
+
+let random = eval {
+  let id = if exists USER_ID USER_ID else Util:uuid()
+  // シードが「PLAY ID+ユーザーID+今日の日付」である乱数生成器を用意
+//  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}`)
+  // シードが「PLAY ID+ユーザーID+ミリ秒」である乱数生成器を用意
+  Math:gen_rng(`{PLAY_ID}-{id}-{Date:year()}-{Date:month()}-{Date:day()}-{Date:minute()}-{Date:second()}-{Date:millisecond()}`)
+}
+
+// 配列のシャッフル
+// 参考: https://qiita.com/pure-adachi/items/77fdf665ff6e5ea22128
+// param: array<arr>
+// return: <arr>
+@shuffle(array) {
+  var i = array.len
+  for i {
+    let k = Math:floor(random() * i)
+    [array[k], array[i - 1]] = [array[i - 1], array[k]]
+    i -= 1
+  }
+  array
+}
+
+@Game() {
+  // カテゴリのカスタム絵文字
+  var category_emojis = null
+  // 解答
+  let answer = {
+    emoji: ""
+    blur_emoji: ""
+    history: []
+  }
+  // タイマー
+  let timer = {
+    start: 0
+    stop: 0
+  }
+
+  var fGiveUp = false
+  // 選択肢用コンポーネント
+  var category_emojis_components = []
+
+  // 初期化
+  @init() {
+  
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `カスタム絵文字読み込み中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+    // 指定カテゴリの絵文字を抽出
+    category_emojis = CUSTOM_EMOJIS.filter(@(i) {
+      i.category == CUSTOM_EMOJI_CATEGORY
+    })
+    // タイマー
+    timer.start = 0
+    timer.time = 0
+    
+    fGiveUp = false
+
+    // 選択肢用カスタム絵文字ボタンの作成
+    initEmojis()
+
+    main()
+  }
+  // 選択肢用カスタム絵文字ボタンの作成
+  @initEmojis() {
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `$[x2 Now Loading]`
+              `絵文字ボタン作成中$[bounce .]$[bounce.delay=0.2s .]$[bounce.delay=0.4s .]`
+            ].join(Str:lf)
+          })
+        ]
+        align: "center"
+      })
+    ])
+
+    category_emojis_components = []
+
+    // カテゴリの絵文字をシャッフル
+    var deck = shuffle(category_emojis)
+    // カスタム絵文字を無作為に選出(被りなし)
+    var select_emojis = []
+    // 選択肢(MAX100)
+    for 100 {
+      let index = random(0, (deck.len - 1))
+      select_emojis.push(deck[index])
+      deck = deck.slice(0, index).concat(deck.slice((index + 1), deck.len))
+      if deck.len == 0 break
+    }
+    // 選択肢用カスタム絵文字ボタン
+    let category_emojis = select_emojis.map(@(v) {
+      `$[clickable.ev={v.name} :{v.name}:]`
+    })
+    category_emojis_components.push(
+      Ui:C:folder({
+        children: [
+          Ui:C:mfm({
+            text: [
+              `<small>絵文字クリックで選択</small>`
+              category_emojis.join()
+            ].join(Str:lf)
+            onClickEv: @(e) {
+              if isCorrect(e) {
+                timer.stop = (Date:now() - timer.start)
+                Mk:dialog("正解‼️", "")
+                result()
+              } else {
+                answer.history.push(`:{e}:`)
+                Mk:dialog("不正解‼️", "")
+              }
+            }
+          })
+        ]
+        title: `この中から選んでね({select_emojis.len})`
+        opened: true
+      })
+    )
+    // 解答の選出
+    answer.emoji = select_emojis[random(0, (select_emojis.len - 1))]
+    // ブラー作成
+    answer.blur_emoji = `:{answer.emoji.name}:`
+    for 5 answer.blur_emoji = `$[blur {answer.blur_emoji}]`
+    // 履歴リセット
+    answer.history = []
+  }
+  // もう一度
+  @replay() {
+    // タイマーリセット
+    timer.start = 0
+    timer.stop = 0
+    
+    fGiveUp = false
+
+    // 選択肢用カスタム絵文字ボタンの作成
+    initEmojis()
+
+    main()
+  }
+  // 正誤判定
+  // param: emoji_name<str>
+  // return: <bool>
+  @isCorrect(emoji_name) {
+    if answer.emoji.name == emoji_name return true else return false
+  }
+  // メイン処理
+  @main() {
+
+    // 結果表示用テキスト
+    let resultMfm = [
+      `$[position.x=4.35 $[x3 $[border.color=64dd17,width=5,style=ridge {answer.blur_emoji}]$[position.x=-2.2 $[border.color=64dd17,width=5,style=ridge {TRANSPARENT_EMOJI}]]]]`
+    ].join(Str:lf)
+
+    render([
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: resultMfm
+          })
+        ]
+        align: "center"
+      })
+      Ui:C:container({
+        children: category_emojis_components
+        align: "center"
+      })
+      Ui:C:container({
+        children: [
+          Ui:C:button({
+            text: "ギブアップ"
+            onClick: @() {
+              fGiveUp = true
+              result()
+            }
+          })
+        ]
+        align: "center"
+      })
+    ])
+    // タイマースタート
+    timer.start = Date:now()
+  }
+  // リザルト
+  @result() {
+
+    // タイム
+    let resultTime = [
+      `{Date:minute(timer.stop).to_str().pad_start(2, "0")}:`
+      `{Date:second(timer.stop).to_str().pad_start(2, "0")}:`
+      `{Date:millisecond(timer.stop).to_str().pad_start(3, "0")}`
+    ].join()
+
+    // 結果表示用テキスト
+    let resultMfm = [
+      `$[position.x=4.35 $[x3 $[border.color=64dd17,width=5,style=ridge :{answer.emoji.name}:]$[position.x=-8.7 $[border.color=64dd17,width=5,style=ridge {TRANSPARENT_EMOJI}]]]]`
+      `⏱️ {resultTime}`
+      `間違えた回数: {answer.history.len}`
+      answer.history.join("→")
+    ].join(Str:lf)
+
+    // 投稿用テキスト
+    let postText = [
+      `<center>`
+      `$[position.x=3.8 $[tada.speed=0s $[tada.speed=0s $[tada.speed=0s $[border.color=64dd17,width=5,style=ridge {answer.blur_emoji}]$[position.x=-2.2 $[border.color=64dd17,width=5,style=ridge {TRANSPARENT_EMOJI}]]]]]]`
+      `⏱️ {resultTime}`
+      `間違えた回数: {answer.history.len}`
+      PLAY_TAG
+      PLAY_URL
+      `</center>`
+    ]
+    if answer.history.len > 0 {
+      postText.insert(4, answer.history.join("→"))
+    }
+
+    let render_components = []
+    render_components.push(
+      Ui:C:container({
+        children: [
+          Ui:C:mfm({
+            text: resultMfm
+          })
+        ]
+        align: "center"
+      })
+    )
+
+    render_components.push(
+      Ui:C:container({
+        children: [
+          Ui:C:button({
+            text: "もう一度"
+            onClick: replay
+          })
+        ]
+        align: "center"
+      })
+    )
+    // ギブアップは投稿できない
+    if !fGiveUp {
+      render_components.push(
+        Ui:C:container({
+          children: [
+            Ui:C:postFormButton({
+              text: "投稿する"
+              form: {
+                text: postText.join(Str:lf)
+              }
+              primary: true
+              rounded: true
+            })
+          ]
+          align: "center"
+        })
+      )
+    }
+    render(render_components)
+  }
+  @render(components) {
+    Ui:render(components)
+  }
+  init()
+}
+Game()

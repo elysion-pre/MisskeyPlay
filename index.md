@@ -83,6 +83,7 @@ Copyright (c) 2024 elysion
 - [杠さんできるかな](./page/kitazawa/a4chm0st7g.md)
 - [きたざわペアーズ](./page/kitazawa/a4tgiwxecv.md)
 - [マイクロビみみちゃん](./page/kitazawa/a4tkl5g9sy.md)
+- [きたざわもじマスター](./page/kitazawa/a4z2oz14i3.md)
 
 
 ### misskey.stream
